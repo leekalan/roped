@@ -3,6 +3,7 @@ proc-macro = true
 
 [package]
 name = "strand-derive"
+description = "derive macro for a strand in rope"
 version = "0.1.0"
 edition = "2021"
 
