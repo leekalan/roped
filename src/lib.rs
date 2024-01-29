@@ -17,12 +17,15 @@ pub use parse::{parse, run_console};
 mod tests {
     use super::*;
 
+    #[allow(dead_code)]
     #[derive(Debug, Bundle)]
     #[bundle(state = "EmptyState")]
     enum BundleInstance {
-        Scope(StrandInstance),
+        #[bundle(name = "scope")]
+        StrandInstance(StrandInstance),
     }
 
+    #[allow(dead_code)]
     #[derive(Debug, Strand)]
     #[strand(state = "EmptyState", action = "action")]
     struct StrandInstance {
@@ -47,14 +50,14 @@ mod tests {
     fn bundle_instance() {
         BundleInstance::run(
             &mut EmptyState,
-            vec!["Scope", "21", "bob", "true"].into_iter(),
+            vec!["scope", "21", "bob", "true"].into_iter(),
         )
         .unwrap();
     }
 
     #[test]
     fn parse_string() {
-        let parsed_string = parse("Scope 21 bob true");
+        let parsed_string = parse("scope 21 bob true");
 
         BundleInstance::run(&mut EmptyState, parsed_string).unwrap();
     }
