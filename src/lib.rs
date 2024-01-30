@@ -1,19 +1,17 @@
 pub mod base_types;
 pub mod bundle;
 pub mod strand;
-pub mod branch;
 pub mod parse;
 
 pub use bundle::Bundle;
 pub use strand::Strand;
-pub use branch::Branch;
 
 pub use base_types::EmptyState;
 
 pub use bundle_derive::Bundle;
 pub use strand_derive::Strand;
 
-pub use parse::{parse_whitespace, run_console};
+pub use parse::{parse_input, run_console};
 
 #[cfg(test)]
 mod tests {
@@ -26,7 +24,7 @@ mod tests {
         #[bundle(name = "scope")]
         StrandInstance(StrandInstance),
         #[bundle(other)]
-        Other(BranchInstance),
+        Other(OtherInstance),
     }
 
     #[allow(dead_code)]
@@ -45,28 +43,32 @@ mod tests {
         }
     }
 
+    #[allow(dead_code)]
     #[derive(Debug)]
-    struct BranchInstance;
+    struct OtherInstance {
+        s: String,
+    }
 
-    impl Branch for BranchInstance {
+    impl Strand for OtherInstance {
         type State = EmptyState;
 
-        fn run<'a>(_: &mut Self::State, arg: &'a str, _: impl Iterator<Item = &'a str>) -> Result<(), String> {
-            println!("You said {}", arg);
+        fn run(_: &mut Self::State, input: &str, _: &[char]) -> Result<(), String> {
+            println!("You sent: {}", input);
             Ok(())
         }
     }
 
     #[test]
     fn strand_instance() {
-        StrandInstance::run(&mut EmptyState, vec!["21", "bob", "true"].into_iter()).unwrap();
+        StrandInstance::run(&mut EmptyState, "21 word  true", &[' ']).unwrap();
     }
 
     #[test]
     fn bundle_instance() {
         BundleInstance::run(
             &mut EmptyState,
-            vec!["scope", "21", "bob", "true"].into_iter(),
+            "scope 21 word true",
+            &[' '],
         )
         .unwrap();
     }
@@ -75,15 +77,24 @@ mod tests {
     fn bundle_instance_other() {
         BundleInstance::run(
             &mut EmptyState,
-            vec!["test 1 2 3"].into_iter(),
+            "seperated by spaces",
+            &[' '],
         )
         .unwrap();
     }
-
+ 
     #[test]
-    fn parse_string() {
-        let parsed_string = parse_whitespace("scope 21 bob true");
-
-        BundleInstance::run(&mut EmptyState, parsed_string).unwrap();
+    fn parse_multiline() {
+        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "scope 21 word true; seperated by spaces", &[' '], &['\n', ';'])
+    }
+    
+    #[test]
+    fn parse_empty() {
+        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "", &[' '], &['\n', ';'])
+    }
+    
+    #[test]
+    fn parse_semi_colons() {
+        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, ";;  ; ;; ; ", &[' '], &['\n', ';'])
     }
 }

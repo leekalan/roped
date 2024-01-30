@@ -35,18 +35,18 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
 
     let parse_variants = variants.iter().map(|(scope_name, field_ty)| {
         quote! {
-            #scope_name => return #field_ty::run(state, args_iter),
+            #scope_name => return #field_ty::run(state, residue, ws_chars),
         }
     });
 
     let match_other = if alternative.is_none() {
         quote!(
-            _ => panic!("Invalid scope: {}", scope_name),
+            _ => return Err(format!("Invalid scope: {}", arg)),
         )
     } else {
         let other = alternative.unwrap();
         quote!(
-            _ => return #other::run(state, scope_name, args_iter),
+            _ => return #other::run(state, input, ws_chars),
         )
     };
 
@@ -54,11 +54,35 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
         impl Bundle for #name {
             type State = #state;
 
-            fn run<'a>(state: &mut Self::State, args: impl Iterator<Item = &'a str>) -> Result<(), String> {
-                let mut args_iter = args;
-                let scope_name = args_iter.next().expect("Not enough arguments");
+            fn run(state: &mut Self::State, input: &str, ws_chars: &[char]) -> Result<(), String> {
+                fn split_at_char<'a>(input_raw: &'a str, splits: &[char]) -> (&'a str, &'a str) {
+                    fn trim_chars<'a>(input: &'a str, splits: &[char]) -> &'a str {
+                        let start_trimmed = input.trim_start_matches(|c| splits.contains(&c));
+                        let trimmed = start_trimmed.trim_end_matches(|c| splits.contains(&c));
+                        trimmed
+                    }
 
-                match scope_name {
+                    let input = trim_chars(input_raw, splits);
+                
+                    let mut out = ("", input);
+                
+                    for (index, char) in input.char_indices() {
+                        if splits.contains(&char) {
+                            let (a, b) = input.split_at(index);
+                            out = (b, trim_chars(a, splits));
+                            break;
+                        }
+                    }
+                
+                    out
+                }
+
+                let (residue, arg) = split_at_char(input, ws_chars);
+                if arg == "" {
+                    return Err("Not enough arguments".into())
+                }
+
+                match arg {
                     #( #parse_variants )*
                     #match_other
                 }

@@ -2,7 +2,7 @@ use std::io;
 
 use crate::Bundle;
 
-pub fn run_console<B, S>(prompt: Option<&str>, nl_chars: &str, state: &mut S)
+pub fn run_console<B, S>(state: &mut S, prompt: Option<&str>, ws_chars: &[char], nl_chars: &[char])
 where
     B: Bundle<State = S>,
 {
@@ -17,44 +17,66 @@ where
         return;
     }
 
-    sub_console::<B, S>(&input, nl_chars, state, 1);
+    parse_input::<B, S>(state, &input, ws_chars, nl_chars);
 }
 
-fn sub_console<B, S>(input: &str, nl_chars: &str, state: &mut S, index: u8)
+pub fn parse_input<B, S>(state: &mut S, input: &str, ws_chars: &[char], nl_chars: &[char])
 where
     B: Bundle<State = S>,
 {
-    let (residue_w, input) = parse_nl(input, nl_chars);
+    parse_input_p::<B, S>(state, input, ws_chars, nl_chars, 1)
+}
 
-    let parsed_input = parse_whitespace(input);
+fn parse_input_p<B, S>(state: &mut S, input: &str, ws_chars: &[char], nl_chars: &[char], index: u8)
+where
+    B: Bundle<State = S>,
+{
+    let (residue, input_ws) = split_at_char(input, nl_chars);
 
-    if residue_w.is_some() {
+    let input = trim_chars(input_ws, ws_chars);
+
+    if input.is_empty() {
+        if residue.is_empty() {
+            return;
+        } else {
+            parse_input_p::<B, S>(state, residue, ws_chars, nl_chars, index);
+            return;
+        }
+    }
+
+    if index != 1 || !residue.is_empty() {
         print!("{}. ", index);
     }
 
-    let result = B::run(state, parsed_input);
+    let result = B::run(state, input, ws_chars);
 
     if let Err(err) = result {
         println!("Err: {}", err);
     }
 
-    if let Some(residue) = residue_w {
-        sub_console::<B, S>(residue, nl_chars, state, index + 1);
+    if !residue.is_empty() {
+        parse_input_p::<B, S>(state, residue, ws_chars, nl_chars, index + 1);
     }
 }
 
-pub fn parse_nl<'a>(input: &'a str, nl_chars: &str) -> (Option<&'a str>, &'a str) {
+fn split_at_char<'a>(input_raw: &'a str, splits: &[char]) -> (&'a str, &'a str) {
+    let input = trim_chars(input_raw, splits);
+
+    let mut out = ("", input);
+
     for (index, char) in input.char_indices() {
-        if nl_chars.find(char).is_some() {
+        if splits.contains(&char) {
             let (a, b) = input.split_at(index);
-            return (Some(b), a)
+            out = (b, trim_chars(a, splits));
+            break;
         }
     }
-    
-    (None, input)
+
+    out
 }
 
-pub fn parse_whitespace(input: &str) -> impl Iterator<Item = &str> {
-    let trimmed_input = input.trim();
-    trimmed_input.split_whitespace()
+fn trim_chars<'a>(input: &'a str, splits: &[char]) -> &'a str {
+    let start_trimmed = input.trim_start_matches(|c| splits.contains(&c));
+    let trimmed = start_trimmed.trim_end_matches(|c| splits.contains(&c));
+    trimmed
 }

@@ -19,14 +19,23 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
 
     let parse_args = fields.iter().map(|(field_name, field_type)| {
         quote! {
-            let #field_name = args_iter.next().expect("Not enough arguments")
-                .parse::<#field_type>().expect("Failed to parse argument");
+            let (residue, arg) = split_at_char(residue, ws_chars);
+            if arg == "" {
+                return Err("Not enough arguments".into())
+            }
+
+            let parsed = match arg.parse::<#field_type>() {
+                Ok(val) => val,
+                Err(_) => return Err(format!("Invalid argument")),
+            };
+
+            let #field_name = parsed;
         }
     });
 
     let list_fields = fields.iter().map(|(field_name, _)| {
         quote! {
-            #field_name
+            #field_name,
         }
     });
 
@@ -34,11 +43,35 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
         impl Strand for #name {
             type State = #state;
 
-            fn run<'a>(state: &mut Self::State, args: impl Iterator<Item = &'a str>) -> Result<(), String> {
-                let mut args_iter = args;
+            fn run(state: &mut Self::State, input: &str, ws_chars: &[char]) -> Result<(), String> {
+                fn split_at_char<'a>(input_raw: &'a str, splits: &[char]) -> (&'a str, &'a str) {
+                    fn trim_chars<'a>(input: &'a str, splits: &[char]) -> &'a str {
+                        let start_trimmed = input.trim_start_matches(|c| splits.contains(&c));
+                        let trimmed = start_trimmed.trim_end_matches(|c| splits.contains(&c));
+                        trimmed
+                    }
+                    
+                    let input = trim_chars(input_raw, splits);
+                
+                    let mut out = ("", input);
+                
+                    for (index, char) in input.char_indices() {
+                        if splits.contains(&char) {
+                            let (a, b) = input.split_at(index);
+                            out = (b, trim_chars(a, splits));
+                            break;
+                        }
+                    }
+                
+                    out
+                }
+
+                let mut residue = input;
+                let mut arg = String::new();
+
                 #(#parse_args)*
 
-                let instance = Self { #( #list_fields, )* };
+                let instance = Self { #( #list_fields )* };
 
                 return instance.#action(state)
             }
