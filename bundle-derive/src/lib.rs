@@ -9,12 +9,18 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
 
     let state = extract_attr_ident(&input, "state");
 
+    let mut alternative = None;
+
     let variants: Vec<_> = if let Data::Enum(DataEnum { variants, .. }) = &input.data {
         variants.iter().filter_map(|variant| {
             match &variant.fields {
                 Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
-                    // Tuple variant with a single field
                     let field_ty = &fields.unnamed[0].ty;
+
+                    if attr_exist(&variant.attrs, "other") {
+                        alternative = Some(field_ty);
+                        return None
+                    }
 
                     let scope_name = extract_attr_name(&variant.attrs, "name")?;
 
@@ -33,6 +39,17 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
         }
     });
 
+    let match_other = if alternative.is_none() {
+        quote!(
+            _ => panic!("Invalid scope: {}", scope_name),
+        )
+    } else {
+        let other = alternative.unwrap();
+        quote!(
+            _ => return #other::run(state, scope_name, args_iter),
+        )
+    };
+
     let gen = quote! {
         impl Bundle for #name {
             type State = #state;
@@ -43,13 +60,33 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
 
                 match scope_name {
                     #( #parse_variants )*
-                    _ => panic!("Invalid scope: {}", scope_name),
+                    #match_other
                 }
             }
         }
     };
 
     gen.into()
+}
+
+fn attr_exist(attrs: &Vec<Attribute>, ident: &str) -> bool {
+    for attr in attrs {
+        if attr.path.is_ident("bundle") {
+            if let Ok(Meta::List(meta_list)) = attr.parse_meta() {
+                for nested_meta in meta_list.nested {
+                    if let syn::NestedMeta::Meta(meta) = nested_meta {
+                        if let Meta::Path(path) = meta {
+                            if path.is_ident(ident) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    false
 }
 
 fn extract_attr_name(attrs: &Vec<Attribute>, ident: &str) -> Option<String> {
