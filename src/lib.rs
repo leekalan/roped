@@ -33,6 +33,7 @@ mod tests {
     struct StrandInstance {
         a: i32,
         b: String,
+        #[strand(flag = "flag")]
         c: bool,
     }
 
@@ -60,14 +61,14 @@ mod tests {
 
     #[test]
     fn strand_instance() {
-        StrandInstance::run(&mut EmptyState, "21 word  true", &[' ']).unwrap();
+        StrandInstance::run(&mut EmptyState, "21 word --flag", &[' ']).unwrap();
     }
 
     #[test]
     fn bundle_instance() {
         BundleInstance::run(
             &mut EmptyState,
-            "scope 21 word true",
+            "scope 21 word",
             &[' '],
         )
         .unwrap();
@@ -85,7 +86,7 @@ mod tests {
  
     #[test]
     fn parse_multiline() {
-        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "scope 21 word true; seperated by spaces", &[' '], &['\n', ';'])
+        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "scope 21 word --flag; seperated by spaces", &[' '], &['\n', ';'])
     }
     
     #[test]
