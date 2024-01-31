@@ -1,0 +1,1 @@
+C:\Users\kalan\Desktop\Coding\rope\bundle-derive\target\package\bundle-derive-0.2.0\target\debug\bundle_derive.dll: C:\Users\kalan\Desktop\Coding\rope\bundle-derive\target\package\bundle-derive-0.2.0\src\lib.rs

@@ -1,0 +1,1 @@
+C:\Users\kalan\Desktop\Coding\rope\strand-derive\target\package\strand-derive-0.2.0\target\debug\strand_derive.dll: C:\Users\kalan\Desktop\Coding\rope\strand-derive\target\package\strand-derive-0.2.0\src\lib.rs
