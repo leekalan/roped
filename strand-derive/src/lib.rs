@@ -28,49 +28,79 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
         panic!("Strand derive only supports structs");
     };
 
-    let parse_args = fields.iter().map(|field_info| {
-        match field_info {
-            FieldInfo::Field(field_name, field_type) => {
-                quote! {
-                    let (residue, arg) = split_at_char(residue, ws_chars);
-                    if arg == "" {
-                        return Err("Not enough arguments".into())
-                    }
-        
-                    let parsed = match arg.parse::<#field_type>() {
-                        Ok(val) => val,
-                        Err(_) => return Err(format!("Invalid argument")),
-                    };
-        
-                    let #field_name = parsed;
-                }
-            },
-            FieldInfo::Flag(field_name, flag_name) => {
-                let flag_match = format!("--{}", flag_name);
+    let flag_def = fields.iter().filter_map(|field_info| {
+        if let FieldInfo::Flag(field_name, _) = field_info {
+            return Some(quote! {
+                let mut #field_name = false;
+            })
+        }
 
-                let flag_char = match flag_name.chars().next() {
-                    Some(val) => val.to_string(),
-                    None => "".into(),
-                };
-                let flag_small = format!("-{}", flag_char);
+        None
+    });
 
-                quote! {
-                    let (temp, arg) = split_at_char(residue, ws_chars);
+    let flag_args = fields.iter().filter_map(|field_info| {
+        if let FieldInfo::Flag(field_name, flag_name) = field_info {
+            let flag_match = format!("--{}", flag_name);
+    
+            let flag_char = match flag_name.chars().next() {
+                Some(val) => val.to_string(),
+                None => "".into(),
+            };
+            let flag_small = format!("-{}", flag_char);
 
+            return Some(quote! {
+                if !flag {
                     let flagged = if arg != "" {
                         arg == #flag_match || arg == #flag_small
                     } else {
                         false
                     };
-
-                    let #field_name = flagged;
         
                     if flagged {
-                        let residue = temp;
+                        #field_name = true;
+                        flag = true;
                     }
                 }
-            },
+            })
         }
+
+        None
+    });
+
+    let set_args = fields.iter().filter_map(|field_info| {
+        let flag_args = flag_args.clone();
+        if let FieldInfo::Field(field_name, field_type) = field_info {
+            return Some(
+                quote! {
+                    let (mut temp, mut arg) = split_at_char(residue, ws_chars);
+
+                    let mut flag = false;
+
+                    #(#flag_args)*
+                    
+                    if flag {
+                        let (a, b) = split_at_char(temp, ws_chars);
+                        temp = a;
+                        arg = b;
+                    }
+                    
+                    residue = temp;
+
+                    if arg == "" {
+                        return Err("Not enough arguments".into())
+                    }
+                
+                    let parsed = match arg.parse::<#field_type>() {
+                        Ok(val) => val,
+                        Err(_) => return Err(format!("Invalid argument")),
+                    };
+                
+                    let #field_name = parsed;
+                }
+            )
+        }
+
+        None
     });
 
     let list_fields = fields.iter().map(|field_info| {
@@ -113,7 +143,15 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
                 let mut residue = input;
                 let mut arg = String::new();
 
-                #(#parse_args)*
+                #(#flag_def)*
+
+                #(#set_args)*
+
+                let (temp, arg) = split_at_char(residue, ws_chars);
+
+                let mut flag = false;
+
+                #(#flag_args)*
 
                 let instance = Self { #( #list_fields )* };
 

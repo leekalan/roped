@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn strand_instance() {
-        StrandInstance::run(&mut EmptyState, "21 word --flag", &[' ']).unwrap();
+        StrandInstance::run(&mut EmptyState, "21 --flag word", &[' ']).unwrap();
     }
 
     #[test]
