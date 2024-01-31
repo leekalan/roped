@@ -2,11 +2,11 @@
 name = "roped"
 description = "a libary for simple cli"
 license = "MIT OR Apache-2.0"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-strand-derive = { path = "./strand-derive", version = "0.2.0"}
-bundle-derive = { path = "./bundle-derive", version = "0.2.0"}
+strand-derive = { path = "./strand-derive", version = "0.3.0"}
+bundle-derive = { path = "./bundle-derive", version = "0.3.0"}
