@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{self, Write};
 
 use crate::Bundle;
 
@@ -7,7 +7,8 @@ where
     B: Bundle<State = S>,
 {
     if let Some(prompt) = prompt {
-        println!("{}", prompt);
+        print!("{}", prompt);
+        io::stdout().flush().unwrap();
     }
 
     let mut input = String::new();
@@ -33,7 +34,7 @@ where
 {
     let (residue, input_ws) = split_at_char(input, nl_chars);
 
-    let input = trim_chars(input_ws, ws_chars);
+    let input = trim_chars(trim_chars(input_ws, &['\r', '\n']), ws_chars);
 
     if input.is_empty() {
         if residue.is_empty() {

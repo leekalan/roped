@@ -86,16 +86,21 @@ mod tests {
  
     #[test]
     fn parse_multiline() {
-        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "scope 21 word --flag; seperated by spaces", &[' '], &['\n', ';'])
+        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "scope 21 word --flag; seperated by spaces", &[' '], &[';'])
     }
     
     #[test]
     fn parse_empty() {
-        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "", &[' '], &['\n', ';'])
+        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "", &[' '], &[';'])
     }
     
     #[test]
     fn parse_semi_colons() {
-        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, ";;  ; ;; ; ", &[' '], &['\n', ';'])
+        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, ";;  ; ;; ; ", &[' '], &[';'])
+    }
+
+    #[test]
+    fn console() {
+        run_console::<BundleInstance, EmptyState>(&mut EmptyState, Some(">"), &[' '], &[';'])
     }
 }
