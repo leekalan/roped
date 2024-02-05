@@ -17,10 +17,7 @@ pub fn run_console<B, S>(
         io::stdout().flush().unwrap();
     }
 
-    let err_prefix = match err_prefix {
-        Some(v) => v,
-        None => "!",
-    };
+    let err_prefix = err_prefix.unwrap_or("!");
 
     let mut input = String::new();
 
@@ -29,10 +26,7 @@ pub fn run_console<B, S>(
         return;
     }
 
-    let counter_suffix = match counter_suffix {
-        Some(v) => v,
-        None => " ",
-    };
+    let counter_suffix = counter_suffix.unwrap_or(" ");
 
     parse_input::<B, S>(state, &input, counter_suffix, err_prefix, ws_chars, nl_chars);
 }
