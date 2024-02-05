@@ -2,8 +2,13 @@ use std::io::{self, Write};
 
 use crate::Bundle;
 
-pub fn run_console<B, S>(state: &mut S, prompt: Option<&str>, ws_chars: &[char], nl_chars: &[char])
-where
+pub fn run_console<B, S>(
+    state: &mut S,
+    prompt: Option<&str>,
+    counter_suffix: Option<&str>,
+    ws_chars: &[char],
+    nl_chars: &[char],
+) where
     B: Bundle<State = S>,
 {
     if let Some(prompt) = prompt {
@@ -18,18 +23,34 @@ where
         return;
     }
 
-    parse_input::<B, S>(state, &input, ws_chars, nl_chars);
+    let counter_suffix = match counter_suffix {
+        Some(v) => v,
+        None => " ",
+    };
+
+    parse_input::<B, S>(state, &input, counter_suffix, ws_chars, nl_chars);
 }
 
-pub fn parse_input<B, S>(state: &mut S, input: &str, ws_chars: &[char], nl_chars: &[char])
-where
+pub fn parse_input<B, S>(
+    state: &mut S,
+    input: &str,
+    counter_suffix: &str,
+    ws_chars: &[char],
+    nl_chars: &[char],
+) where
     B: Bundle<State = S>,
 {
-    parse_input_p::<B, S>(state, input, ws_chars, nl_chars, 1)
+    parse_input_p::<B, S>(state, input, counter_suffix, ws_chars, nl_chars, 1)
 }
 
-fn parse_input_p<B, S>(state: &mut S, input: &str, ws_chars: &[char], nl_chars: &[char], index: u8)
-where
+fn parse_input_p<B, S>(
+    state: &mut S,
+    input: &str,
+    counter_suffix: &str,
+    ws_chars: &[char],
+    nl_chars: &[char],
+    index: u8,
+) where
     B: Bundle<State = S>,
 {
     let (residue, input_ws) = split_at_char(input, nl_chars);
@@ -40,13 +61,13 @@ where
         if residue.is_empty() {
             return;
         } else {
-            parse_input_p::<B, S>(state, residue, ws_chars, nl_chars, index);
+            parse_input_p::<B, S>(state, residue, counter_suffix, ws_chars, nl_chars, index);
             return;
         }
     }
 
     if index != 1 || !residue.is_empty() {
-        print!("{}. ", index);
+        print!("{}{}", index, counter_suffix);
     }
 
     let result = B::run(state, input, ws_chars);
@@ -56,7 +77,14 @@ where
     }
 
     if !residue.is_empty() {
-        parse_input_p::<B, S>(state, residue, ws_chars, nl_chars, index + 1);
+        parse_input_p::<B, S>(
+            state,
+            residue,
+            counter_suffix,
+            ws_chars,
+            nl_chars,
+            index + 1,
+        );
     }
 }
 

@@ -1,7 +1,7 @@
 pub mod base_types;
 pub mod bundle;
-pub mod strand;
 pub mod parse;
+pub mod strand;
 
 pub use bundle::Bundle;
 pub use strand::Strand;
@@ -66,41 +66,49 @@ mod tests {
 
     #[test]
     fn bundle_instance() {
-        BundleInstance::run(
-            &mut EmptyState,
-            "scope 21 word",
-            &[' '],
-        )
-        .unwrap();
+        BundleInstance::run(&mut EmptyState, "scope 21 word", &[' ']).unwrap();
     }
 
     #[test]
     fn bundle_instance_other() {
-        BundleInstance::run(
-            &mut EmptyState,
-            "seperated by spaces",
-            &[' '],
-        )
-        .unwrap();
+        BundleInstance::run(&mut EmptyState, "seperated by spaces", &[' ']).unwrap();
     }
- 
+
     #[test]
     fn parse_multiline() {
-        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "scope 21 word --flag; seperated by spaces", &[' '], &[';'])
+        parse_input::<BundleInstance, EmptyState>(
+            &mut EmptyState,
+            "scope 21 word --flag; seperated by spaces",
+            ". ",
+            &[' '],
+            &[';'],
+        )
     }
-    
+
     #[test]
     fn parse_empty() {
-        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "", &[' '], &[';'])
+        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "", ". ", &[' '], &[';'])
     }
-    
+
     #[test]
     fn parse_semi_colons() {
-        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, ";;  ; ;; ; ", &[' '], &[';'])
+        parse_input::<BundleInstance, EmptyState>(
+            &mut EmptyState,
+            ";;  ; ;; ; ",
+            ". ",
+            &[' '],
+            &[';'],
+        )
     }
 
     #[test]
     fn console() {
-        run_console::<BundleInstance, EmptyState>(&mut EmptyState, Some(">"), &[' '], &[';'])
+        run_console::<BundleInstance, EmptyState>(
+            &mut EmptyState,
+            "> ".into(),
+            ". ".into(),
+            &[' '],
+            &[';'],
+        )
     }
 }
