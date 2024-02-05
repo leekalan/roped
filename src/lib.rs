@@ -80,6 +80,7 @@ mod tests {
             &mut EmptyState,
             "scope 21 word --flag; seperated by spaces",
             ". ",
+            "!",
             &[' '],
             &[';'],
         )
@@ -87,7 +88,7 @@ mod tests {
 
     #[test]
     fn parse_empty() {
-        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "", ". ", &[' '], &[';'])
+        parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "", ". ", "!", &[' '], &[';'])
     }
 
     #[test]
@@ -96,6 +97,7 @@ mod tests {
             &mut EmptyState,
             ";;  ; ;; ; ",
             ". ",
+            "!",
             &[' '],
             &[';'],
         )
@@ -107,6 +109,7 @@ mod tests {
             &mut EmptyState,
             "> ".into(),
             ". ".into(),
+            None,
             &[' '],
             &[';'],
         )

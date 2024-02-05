@@ -6,6 +6,7 @@ pub fn run_console<B, S>(
     state: &mut S,
     prompt: Option<&str>,
     counter_suffix: Option<&str>,
+    err_prefix: Option<&str>,
     ws_chars: &[char],
     nl_chars: &[char],
 ) where
@@ -16,10 +17,15 @@ pub fn run_console<B, S>(
         io::stdout().flush().unwrap();
     }
 
+    let err_prefix = match err_prefix {
+        Some(v) => v,
+        None => "!",
+    };
+
     let mut input = String::new();
 
     if io::stdin().read_line(&mut input).is_err() {
-        println!("Err: failed to read console!");
+        println!("{}failed to read console!", err_prefix);
         return;
     }
 
@@ -28,25 +34,27 @@ pub fn run_console<B, S>(
         None => " ",
     };
 
-    parse_input::<B, S>(state, &input, counter_suffix, ws_chars, nl_chars);
+    parse_input::<B, S>(state, &input, counter_suffix, err_prefix, ws_chars, nl_chars);
 }
 
 pub fn parse_input<B, S>(
     state: &mut S,
     input: &str,
     counter_suffix: &str,
+    err_prefix: &str,
     ws_chars: &[char],
     nl_chars: &[char],
 ) where
     B: Bundle<State = S>,
 {
-    parse_input_p::<B, S>(state, input, counter_suffix, ws_chars, nl_chars, 1)
+    parse_input_p::<B, S>(state, input, counter_suffix, err_prefix, ws_chars, nl_chars, 1)
 }
 
 fn parse_input_p<B, S>(
     state: &mut S,
     input: &str,
     counter_suffix: &str,
+    err_prefix: &str,
     ws_chars: &[char],
     nl_chars: &[char],
     index: u8,
@@ -61,7 +69,7 @@ fn parse_input_p<B, S>(
         if residue.is_empty() {
             return;
         } else {
-            parse_input_p::<B, S>(state, residue, counter_suffix, ws_chars, nl_chars, index);
+            parse_input_p::<B, S>(state, residue, counter_suffix, err_prefix, ws_chars, nl_chars, index);
             return;
         }
     }
@@ -73,7 +81,7 @@ fn parse_input_p<B, S>(
     let result = B::run(state, input, ws_chars);
 
     if let Err(err) = result {
-        println!("Err: {}", err);
+        println!("{}{}", err_prefix, err);
     }
 
     if !residue.is_empty() {
@@ -81,6 +89,7 @@ fn parse_input_p<B, S>(
             state,
             residue,
             counter_suffix,
+            err_prefix,
             ws_chars,
             nl_chars,
             index + 1,
