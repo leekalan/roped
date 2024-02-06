@@ -23,7 +23,7 @@ mod tests {
     enum BundleInstance {
         #[bundle(name = "scope")]
         StrandInstance(StrandInstance),
-        #[bundle(prefix = ":")]
+        #[bundle(other)]
         Other(OtherInstance),
     }
 
