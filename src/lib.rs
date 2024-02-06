@@ -46,9 +46,7 @@ mod tests {
 
     #[allow(dead_code)]
     #[derive(Debug)]
-    struct OtherInstance {
-        s: String,
-    }
+    struct OtherInstance;
 
     impl Strand for OtherInstance {
         type State = EmptyState;
