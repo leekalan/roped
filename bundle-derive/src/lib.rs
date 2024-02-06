@@ -11,6 +11,8 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
 
     let mut alternative = None;
 
+    let mut prefixes: Vec<_> = Vec::new();
+
     let variants: Vec<_> = if let Data::Enum(DataEnum { variants, .. }) = &input.data {
         variants.iter().filter_map(|variant| {
             match &variant.fields {
@@ -20,6 +22,10 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
                     if attr_exist(&variant.attrs, "other") {
                         alternative = Some(field_ty);
                         return None
+                    }
+
+                    if let Some(prefix) = extract_attr_name(&variant.attrs, "prefix") {
+                        prefixes.push((prefix, field_ty));
                     }
 
                     let scope_name = extract_attr_name(&variant.attrs, "name")?;
@@ -32,6 +38,12 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
     } else {
         panic!("Strand derive only supports enums");
     };
+    
+    let prefix_variants = prefixes.iter().map(|(prefix, field_ty)| {
+        quote! {
+            s if s.starts_with(#prefix) => return #field_ty::run(state, input.strip_prefix(#prefix).unwrap(), ws_chars),
+        }
+    });
 
     let parse_variants = variants.iter().map(|(scope_name, field_ty)| {
         quote! {
@@ -84,6 +96,7 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
 
                 match arg {
                     #( #parse_variants )*
+                    #( #prefix_variants)*
                     #match_other
                 }
             }
