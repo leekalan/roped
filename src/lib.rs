@@ -21,6 +21,8 @@ mod tests {
     #[derive(Debug, Bundle)]
     #[bundle(state = "EmptyState")]
     enum BundleInstance {
+        #[bundle(prefix = ":")]
+        Quit(Quit),
         #[bundle(name = "scope")]
         StrandInstance(StrandInstance),
         #[bundle(other)]
@@ -54,6 +56,18 @@ mod tests {
         fn run(_: &mut Self::State, input: &str, _: &[char]) -> Result<(), String> {
             println!("You sent: {}", input);
             Ok(())
+        }
+    }
+
+    #[allow(dead_code)]
+    #[derive(Debug)]
+    struct Quit;
+
+    impl Strand for Quit {
+        type State = EmptyState;
+
+        fn run(_: &mut Self::State, _: &str, _: &[char]) -> Result<(), String> {
+            std::process::exit(0);
         }
     }
 
