@@ -117,15 +117,13 @@ mod tests {
 
     #[test]
     fn console() {
-        loop {
-            run_console::<BundleInstance, EmptyState>(
-                &mut EmptyState,
-                "> ".into(),
-                ". ".into(),
-                None,
-                &[' '],
-                &[';'],
-            )
-        }
+        run_console::<BundleInstance, EmptyState>(
+            &mut EmptyState,
+            "> ".into(),
+            ". ".into(),
+            None,
+            &[' '],
+            &[';'],
+        )
     }
 }
