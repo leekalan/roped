@@ -1,6 +1,6 @@
 pub mod base_types;
 pub mod bundle;
-pub mod parse;
+pub mod console;
 pub mod strand;
 
 pub use bundle::Bundle;
@@ -11,7 +11,7 @@ pub use base_types::EmptyState;
 pub use bundle_derive::Bundle;
 pub use strand_derive::Strand;
 
-pub use parse::{parse_input, run_console};
+pub use console::{parse_input, run_console};
 
 #[cfg(test)]
 mod tests {
