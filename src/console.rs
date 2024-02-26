@@ -1,16 +1,21 @@
 use std::io::{self, Write};
 
+use parsr::{
+    matcher::MatchContainer,
+    parse::{Parse, ParsePair},
+};
+
 use crate::Bundle;
 
-pub fn run_console<B, S>(
+pub fn run_console<'a, B, S>(
     state: &mut S,
     prompt: Option<&str>,
     counter_suffix: Option<&str>,
     err_prefix: Option<&str>,
-    ws_chars: &[char],
-    nl_chars: &[char],
+    ws_chars: MatchContainer<&str, char>,
+    nl_chars: MatchContainer<&str, char>,
 ) where
-    B: Bundle<State = S>,
+    B: Bundle<State = S, Input = &'a str>,
 {
     if let Some(prompt) = prompt {
         print!("{}", prompt);
@@ -28,87 +33,97 @@ pub fn run_console<B, S>(
 
     let counter_suffix = counter_suffix.unwrap_or(" ");
 
-    parse_input::<B, S>(state, &input, counter_suffix, err_prefix, ws_chars, nl_chars);
+    parse_input::<B, S>(
+        state,
+        &input,
+        counter_suffix,
+        err_prefix,
+        ws_chars,
+        nl_chars,
+    );
 }
 
-pub fn parse_input<B, S>(
+pub fn parse_input<'a, B, S>(
     state: &mut S,
-    input: &str,
+    input: &'a str,
     counter_suffix: &str,
     err_prefix: &str,
-    ws_chars: &[char],
-    nl_chars: &[char],
+    ws_chars: MatchContainer<&'a str, char>,
+    nl_chars: MatchContainer<&str, char>,
 ) where
-    B: Bundle<State = S>,
+    B: Bundle<State = S, Input = &'a str>,
 {
-    parse_input_p::<B, S>(state, input, counter_suffix, err_prefix, ws_chars, nl_chars, 1)
+    parse_input_p::<B, S>(
+        state,
+        &input,
+        counter_suffix,
+        err_prefix,
+        ws_chars,
+        nl_chars,
+        1,
+    )
 }
 
-fn parse_input_p<B, S>(
+/// INPUT FIELD MUST BE TRIMMED AT THE START AND NOT EMPTY
+fn parse_input_p<'a, B, S>(
     state: &mut S,
-    input: &str,
+    input: &'a str,
     counter_suffix: &str,
     err_prefix: &str,
-    ws_chars: &[char],
-    nl_chars: &[char],
+    ws_chars: MatchContainer<&'a str, char>,
+    nl_chars: MatchContainer<&str, char>,
     index: u8,
 ) where
-    B: Bundle<State = S>,
+    B: Bundle<State = S, Input = &'a str>,
 {
-    let (residue, input_ws) = split_at_char(input, nl_chars);
+    let ParsePair { parsed, excess } = input.parse_one_arg(nl_chars);
 
-    let input = trim_chars(trim_chars(input_ws, &['\r', '\n']), ws_chars);
-
-    if input.is_empty() {
-        if residue.is_empty() {
-            return;
-        } else {
-            parse_input_p::<B, S>(state, residue, counter_suffix, err_prefix, ws_chars, nl_chars, index);
-            return;
-        }
-    }
-
-    if index != 1 || !residue.is_empty() {
+    if index != 1 || excess.is_some() {
         print!("{}{}", index, counter_suffix);
     }
 
     let result = B::run(state, input, ws_chars);
 
-    if let Err(err) = result {
-        println!("{}{}", err_prefix, err);
-    }
+    // let (residue, input_ws) = split_at_char(input, nl_chars);
 
-    if !residue.is_empty() {
-        parse_input_p::<B, S>(
-            state,
-            residue,
-            counter_suffix,
-            err_prefix,
-            ws_chars,
-            nl_chars,
-            index + 1,
-        );
-    }
-}
+    // let input = trim_chars(trim_chars(input_ws, &['\r', '\n']), ws_chars);
 
-fn split_at_char<'a>(input_raw: &'a str, splits: &[char]) -> (&'a str, &'a str) {
-    let input = trim_chars(input_raw, splits);
+    // if input.is_empty() {
+    //     if residue.is_empty() {
+    //         return;
+    //     } else {
+    //         parse_input_p::<B, S>(
+    //             state,
+    //             residue,
+    //             counter_suffix,
+    //             err_prefix,
+    //             ws_chars,
+    //             nl_chars,
+    //             index,
+    //         );
+    //         return;
+    //     }
+    // }
 
-    let mut out = ("", input);
+    // if index != 1 || !residue.is_empty() {
+    //     print!("{}{}", index, counter_suffix);
+    // }
 
-    for (index, char) in input.char_indices() {
-        if splits.contains(&char) {
-            let (a, b) = input.split_at(index);
-            out = (b, trim_chars(a, splits));
-            break;
-        }
-    }
+    // let result = B::run(state, input, ws_chars);
 
-    out
-}
+    // if let Err(err) = result {
+    //     println!("{}{}", err_prefix, err);
+    // }
 
-fn trim_chars<'a>(input: &'a str, splits: &[char]) -> &'a str {
-    let start_trimmed = input.trim_start_matches(|c| splits.contains(&c));
-    let trimmed = start_trimmed.trim_end_matches(|c| splits.contains(&c));
-    trimmed
+    // if !residue.is_empty() {
+    //     parse_input_p::<B, S>(
+    //         state,
+    //         residue,
+    //         counter_suffix,
+    //         err_prefix,
+    //         ws_chars,
+    //         nl_chars,
+    //         index + 1,
+    //     );
+    // }
 }
