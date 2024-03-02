@@ -33,7 +33,11 @@ where
             },
             ErrorType::Parse(parse_err) => match parse_err.parse_type {
                 ArgType::Scope => write!(f, "Invalid scope \"{}\" ({})", parse_err.arg, self.index),
-                ArgType::Arg => write!(f, "Unable to cast argument \"{}\" ({})", parse_err.arg, self.index),
+                ArgType::Arg => write!(
+                    f,
+                    "Unable to cast argument \"{}\" ({})",
+                    parse_err.arg, self.index
+                ),
             },
             ErrorType::Flag(flag) => write!(f, "Invalid flag \"--{}\"", flag),
         }
