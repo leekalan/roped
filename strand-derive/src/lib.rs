@@ -14,7 +14,5 @@ pub fn strand_derive(input: TokenStream) -> TokenStream {
         syn::Data::Struct(_) => strand_derive_struct(input),
         syn::Data::Enum(_) => strand_derive_enum(input),
         syn::Data::Union(_) => panic!("Cannot be a union"),
-    };
-
-    todo!()
+    }
 }

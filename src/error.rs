@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-pub enum RopedError<Err> where {
+pub enum RopedError<Err> {
     Internal(RopedInternalError),
     Err(Err),
 }

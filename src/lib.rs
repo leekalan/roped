@@ -26,15 +26,17 @@ mod tests {
         type Err = String;
 
         fn run(
-            state: &mut Self::State,
+            _state: &mut Self::State,
             input: Self::Input,
             ws_chars: MatchContainer<Self::Input, <Self::Input as MatcherStart>::Item>,
+            _: usize,
         ) -> Result<(), RopedError<Self::Err>> {
             let ParsePair { parsed, excess } = input.parse_one_arg(ws_chars);
             match excess {
                 Some(v) => println!("{} + {}", parsed, v),
                 None => println!("{}", parsed),
             }
+
             Ok(())
         }
     }
@@ -43,9 +45,9 @@ mod tests {
     fn manual_bundle_instance() {
         run_console::<ManualImplStrand, EmptyState>(
             &mut EmptyState,
-            None,
-            None,
-            None,
+            "> ".into(),
+            ". ".into(),
+            "!".into(),
             MatchContainer::ItemList(&[' ']),
             MatchContainer::ItemList(&['\n', ';']),
         );

@@ -5,6 +5,8 @@ use parsr::{
 
 use crate::error::RopedError;
 
+pub struct RopedInfo {}
+
 pub trait Strand<'a> {
     type State;
     type Input: Parse;
@@ -14,5 +16,6 @@ pub trait Strand<'a> {
         state: &mut Self::State,
         input: Self::Input,
         ws_chars: MatchContainer<Self::Input, <Self::Input as MatcherStart>::Item>,
+        index: usize,
     ) -> Result<(), RopedError<Self::Err>>;
 }

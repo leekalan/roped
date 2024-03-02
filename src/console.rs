@@ -1,9 +1,6 @@
 use std::io::{self, Write};
 
-use parsr::{
-    matcher::MatchContainer,
-    parse::{Parse, ParsePair},
-};
+use parsr::{matcher::MatchContainer, parse::Parse, trim::Trim};
 
 use crate::{error::RopedError, strand::Strand};
 
@@ -24,18 +21,40 @@ pub fn run_console<R, S>(
 
     let err_prefix = err_prefix.unwrap_or("!");
 
-    let mut input = String::new();
+    let mut read_input = String::new();
 
-    if io::stdin().read_line(&mut input).is_err() {
+    if io::stdin().read_line(&mut read_input).is_err() {
         println!("{}failed to read console!", err_prefix);
         return;
     }
 
+    let input: &str =
+        match Trim::trim_end(read_input.as_ref(), MatchContainer::ItemList(&['\r', '\n'])) {
+            Some(v) => v,
+            None => return,
+        };
+
     let counter_suffix = counter_suffix.unwrap_or(" ");
 
     let mut iter = input.parse_all_args(nl_chars);
-    
-    for command in iter {
-        todo!()
+
+    let mut index = 1usize;
+    while let Some(command) = iter.next().map(|s| Trim::trim_start(s, ws_chars)) {
+        let command = match command {
+            Some(v) => v,
+            None => continue,
+        };
+
+        if !iter.is_empty() || index != 1 {
+            print!("{}{}", index, counter_suffix);
+            index += 1;
+        }
+
+        if let Err(err) = R::run(state, command, ws_chars, 1) {
+            match err {
+                RopedError::Internal(_err) => (),
+                RopedError::Err(err) => println!("{}{}", err_prefix, err),
+            }
+        }
     }
 }
