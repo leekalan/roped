@@ -3,12 +3,16 @@ use parsr::{
     parse::Parse,
 };
 
-pub trait Strand {
+use crate::error::RopedError;
+
+pub trait Strand<'a> {
     type State;
     type Input: Parse;
+    type Err;
+
     fn run(
         state: &mut Self::State,
         input: Self::Input,
         ws_chars: MatchContainer<Self::Input, <Self::Input as MatcherStart>::Item>,
-    ) -> Result<(), String>;
+    ) -> Result<(), RopedError<Self::Err>>;
 }
