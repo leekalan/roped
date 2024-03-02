@@ -39,7 +39,7 @@ where
                     parse_err.arg, self.index
                 ),
             },
-            ErrorType::Flag(flag) => write!(f, "Invalid flag \"--{}\"", flag),
+            ErrorType::Flag(flag) => write!(f, "Invalid flag \"--{}\" ({})", flag, self.index),
         }
     }
 }
