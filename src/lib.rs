@@ -14,7 +14,6 @@ mod tests {
 
     use base_types::EmptyState;
     use console::run_console;
-    use error::RopedError;
     use strand::Strand;
 
     use strand_derive::Strand;
@@ -30,7 +29,7 @@ mod tests {
             input: Self::Input,
             ws_chars: MatchContainer<Self::Input, <Self::Input as MatcherStart>::Item>,
             _: usize,
-        ) -> Result<(), RopedError<Self::Err>> {
+        ) -> Result<(), error::Error<Self::Input, Self::Err>> {
             let ParsePair { parsed, excess } = input.parse_one_arg(ws_chars);
             match excess {
                 Some(v) => println!("{} + {}", parsed, v),

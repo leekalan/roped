@@ -3,7 +3,7 @@ use parsr::{
     parse::Parse,
 };
 
-use crate::error::RopedError;
+use crate::error::Error;
 
 pub struct RopedInfo {}
 
@@ -17,5 +17,5 @@ pub trait Strand<'a> {
         input: Self::Input,
         ws_chars: MatchContainer<Self::Input, <Self::Input as MatcherStart>::Item>,
         index: usize,
-    ) -> Result<(), RopedError<Self::Err>>;
+    ) -> Result<(), Error<Self::Input, Self::Err>>;
 }

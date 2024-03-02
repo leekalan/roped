@@ -2,7 +2,7 @@ use std::io::{self, Write};
 
 use parsr::{matcher::MatchContainer, parse::Parse, trim::Trim};
 
-use crate::{error::RopedError, strand::Strand};
+use crate::strand::Strand;
 
 pub fn run_console<R, S>(
     state: &mut S,
@@ -51,10 +51,7 @@ pub fn run_console<R, S>(
         }
 
         if let Err(err) = R::run(state, command, ws_chars, 1) {
-            match err {
-                RopedError::Internal(_err) => (),
-                RopedError::Err(err) => println!("{}{}", err_prefix, err),
-            }
+            println!("{}{}", err_prefix, err);
         }
     }
 }
