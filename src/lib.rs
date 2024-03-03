@@ -52,6 +52,12 @@ mod tests {
         );
     }
 
+    #[derive(Strand)]
+    #[strand(state = State, input = &str)]
+    enum ImplStrand {
+        A,
+    }
+
     // #[allow(dead_code)]
     // #[derive(Debug, Bundle)]
     // #[bundle(state = "EmptyState")]
