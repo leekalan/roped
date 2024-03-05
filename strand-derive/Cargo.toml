@@ -14,5 +14,5 @@ edition = "2021"
 parsr = "0.1.4"
 castr = "0.1.0"
 proc-macro2 = "1.0.78"
-syn = "2.0.52"
+syn = {version = "2.0.52"}
 quote = "1.0.35"

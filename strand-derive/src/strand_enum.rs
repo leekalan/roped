@@ -31,24 +31,32 @@ pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
             _ => {
                 return Err(syn::Error::new_spanned(
                     m,
-                    "expected type, \"state(<type>)\"",
+                    "expected type, \"state = <type>\"",
                 ))
             }
         },
         None => syn::parse(quote::quote!(roped::base_types::EmptyState).into())?,
     };
 
-    let input: Type = match meta_map.get("input") {
+    let input_raw: Type = match meta_map.get("input") {
         Some(m) => match m {
             Meta::NameValue(n) => syn::parse(n.value.to_token_stream().into())?,
             _ => {
                 return Err(syn::Error::new_spanned(
                     m,
-                    "expected type, \"input(<type>)\"",
+                    "expected type, \"input = <type>\"",
                 ))
             }
         },
         None => syn::parse(quote::quote!(&str).into())?,
+    };
+
+    let input = match input_raw {
+        Type::Reference(i) => {
+            let ty = *i.elem;
+            syn::parse_quote! { &'a #ty }
+        },
+        v => v,
     };
 
     let gen = quote::quote! {

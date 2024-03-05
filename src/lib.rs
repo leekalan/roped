@@ -55,7 +55,7 @@ mod tests {
     }
 
     #[derive(Strand)]
-    #[strand(input = &str)]
+    #[strand(state = u8, input = &str)]
     enum ImplStrand {
         A,
     }
