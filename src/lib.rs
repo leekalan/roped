@@ -18,6 +18,8 @@ mod tests {
 
     use strand_derive::Strand;
 
+    use crate as roped;
+
     struct ManualImplStrand;
     impl<'a> Strand<'a> for ManualImplStrand {
         type State = EmptyState;
@@ -53,7 +55,7 @@ mod tests {
     }
 
     #[derive(Strand)]
-    #[strand(state = State, input(&str))]
+    #[strand(input = &str)]
     enum ImplStrand {
         A,
     }

@@ -27,7 +27,7 @@ pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
 
     let state: Type = match meta_map.get("state") {
         Some(m) => match m {
-            Meta::NameValue(n) => (n.value.to_token_stream()),
+            Meta::NameValue(n) => syn::parse(n.value.to_token_stream().into())?,
             _ => {
                 return Err(syn::Error::new_spanned(
                     m,
@@ -35,11 +35,26 @@ pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
                 ))
             }
         },
-        None => ,
+        None => syn::parse(quote::quote!(roped::base_types::EmptyState).into())?,
+    };
+
+    let input: Type = match meta_map.get("input") {
+        Some(m) => match m {
+            Meta::NameValue(n) => syn::parse(n.value.to_token_stream().into())?,
+            _ => {
+                return Err(syn::Error::new_spanned(
+                    m,
+                    "expected type, \"input(<type>)\"",
+                ))
+            }
+        },
+        None => syn::parse(quote::quote!(&str).into())?,
     };
 
     let gen = quote::quote! {
-        //Empty
+        pub fn #name() -> #state where #input : parsr::parse::Parse {
+            todo!()
+        }
     };
 
     Ok(gen)
