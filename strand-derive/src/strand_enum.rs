@@ -1,5 +1,6 @@
 use proc_macro2::TokenStream;
-use syn::Meta;
+use quote::ToTokens;
+use syn::{Meta, Type};
 
 use crate::{meta_map::collect_meta_map, search_meta::search_meta};
 
@@ -23,6 +24,22 @@ pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
     };
 
     let meta_map = collect_meta_map(meta_list, &["state", "input"])?;
+
+    let mut state: Type;
+
+    for pair in meta_map {
+        match pair {
+            ("state", v) => {
+                v.map(|s| match s {
+                    Meta::NameValue(v) => todo!(),
+                    _ => todo!(),
+                });
+
+                todo!()
+            }
+            _ => panic!("internal error, this should not happen"),
+        }
+    }
 
     let gen = quote::quote! {
         //Empty

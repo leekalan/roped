@@ -1,8 +1,8 @@
+mod build_error;
+mod meta_map;
 mod search_meta;
 mod strand_enum;
 mod strand_struct;
-mod meta_map;
-mod build_error;
 
 use strand_enum::strand_derive_enum;
 use strand_struct::strand_derive_struct;
