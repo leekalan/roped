@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{Meta, Type};
 
-use crate::{meta_map::collect_meta_map, search_meta::search_meta};
+use crate::{build_error::BuildError, meta_map::collect_meta_map, search_meta::search_meta};
 
 pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
     let name = &input.ident;
@@ -23,23 +23,18 @@ pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
         }
     };
 
-    let meta_map = collect_meta_map(meta_list, &["state", "input"])?;
-
-    let mut state: Type;
-
-    for pair in meta_map {
-        match pair {
-            ("state", v) => {
-                v.map(|s| match s {
-                    Meta::NameValue(v) => todo!(),
-                    _ => todo!(),
-                });
-
-                todo!()
-            }
-            _ => panic!("internal error, this should not happen"),
-        }
-    }
+    let meta_map = collect_meta_map(meta_list, &[("state", false), ("input", false)])?;
+    
+    let state = match meta_map.get("state") {
+        Some(m) => match m {
+            Meta::List(n) => &n.tokens,
+            _ => return Err(syn::Error::new_spanned(
+                m,
+                "expected type, \"state(<type>)\"",
+            )),
+        },
+        None => todo!(),
+    };
 
     let gen = quote::quote! {
         //Empty
