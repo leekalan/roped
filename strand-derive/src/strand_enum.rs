@@ -24,16 +24,18 @@ pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
     };
 
     let meta_map = collect_meta_map(meta_list, &[("state", false), ("input", false)])?;
-    
-    let state = match meta_map.get("state") {
+
+    let state: Type = match meta_map.get("state") {
         Some(m) => match m {
-            Meta::List(n) => &n.tokens,
-            _ => return Err(syn::Error::new_spanned(
-                m,
-                "expected type, \"state(<type>)\"",
-            )),
+            Meta::NameValue(n) => (n.value.to_token_stream()),
+            _ => {
+                return Err(syn::Error::new_spanned(
+                    m,
+                    "expected type, \"state(<type>)\"",
+                ))
+            }
         },
-        None => todo!(),
+        None => ,
     };
 
     let gen = quote::quote! {
