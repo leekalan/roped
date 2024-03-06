@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use proc_macro2::TokenStream;
 use quote::ToTokens;
-use syn::{token::Token, Meta, Type};
+use syn::{spanned::Spanned, token::Token, Lit, Meta, Type};
 
 use crate::{
     build_error::BuildError,
@@ -127,20 +127,34 @@ fn get_config(input: &syn::DeriveInput) -> syn::Result<Config> {
     })
 }
 
-enum Triggers {
+enum Trigger {
+    None,
     Name(String),
     Prefix(String),
     NamePrefix(String, String),
 }
+impl Trigger {
+    pub fn build(self, trigger: Trigger, span: proc_macro2::Span) -> syn::Result<Self> {
+        match (self, trigger) {
+            (Trigger::None, v) => Ok(v),
+            (v, Trigger::None) => Ok(v),
+            (Trigger::Name(n), Trigger::Prefix(p)) => Ok(Trigger::NamePrefix(n, p)),
+            (Trigger::Prefix(p), Trigger::Name(n)) => Ok(Trigger::NamePrefix(n, p)),
+            (Trigger::Name(n), _) => Err(syn::Error::new(span, format!("\"{n}\" already exists"))),
+            (Trigger::Prefix(n), _) => Err(syn::Error::new(span, format!("prefix \"{n}\" already exists"))),
+            (Trigger::NamePrefix(n, _), _) => Err(syn::Error::new(span, format!("\"{n}\" already exists"))),
+        }
+    }
+}
 
-fn get_variants(input: &syn::DeriveInput) -> syn::Result<(HashMap<Triggers, Type>, Option<Type>)> {
-    let map: HashMap<Triggers, Type> = HashMap::new();
+fn get_variants(input: &syn::DeriveInput) -> syn::Result<(HashMap<Trigger, Type>, Option<Type>)> {
+    let map: HashMap<Trigger, Type> = HashMap::new();
 
     let other: Option<Type> = None;
 
     let e = match &input.data {
         syn::Data::Enum(v) => v,
-        _ => panic!("Internal Error, this is not supposed to happen"),
+        _ => panic!("internal error, this should not happen"),
     };
 
     for variant in &e.variants {
@@ -164,15 +178,32 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(HashMap<Triggers, Type
             meta_list,
             &[("name", false), ("prefix", false), ("flag", false)],
         )?;
-
         
+        let trigger = Trigger::None;
+
+        for (path, meta) in meta_map {
+            let string = match meta {
+                Meta::NameValue(nv) => {
+                    let temp = nv.value.to_token_stream().into();
+                    syn::parse_macro_input!(temp as syn::LitStr)
+                },
+                _ => return Err(syn::Error::new_spanned(meta, "expected string \"<attr> = <string>\"")),
+            };
+
+            match path {
+                "name" => todo!(),
+                "prefix" => todo!(),
+                "flag" => todo!(),
+                _ => panic!("internal error, this should not happen")
+            }
+        }
     }
 
     todo!()
 }
 
 fn construct_fields(
-    triggers: (HashMap<Triggers, Type>, Option<Type>),
+    triggers: (HashMap<Trigger, Type>, Option<Type>),
 ) -> syn::Result<proc_macro2::TokenStream> {
     todo!()
 }
