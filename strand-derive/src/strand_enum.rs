@@ -176,24 +176,24 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(HashMap<Trigger, Type>
     
         let meta_map = collect_meta_map(
             meta_list,
-            &[("name", false), ("prefix", false), ("flag", false)],
+            &[("name", false), ("prefix", false)],
         )?;
         
-        let trigger = Trigger::None;
+        let mut trigger = Trigger::None;
 
         for (path, meta) in meta_map {
             let string = match meta {
                 Meta::NameValue(nv) => {
-                    let temp = nv.value.to_token_stream().into();
-                    syn::parse_macro_input!(temp as syn::LitStr)
+                    let temp: proc_macro::TokenStream = nv.value.to_token_stream().into();
+                    let lit: syn::LitStr = syn::parse(temp)?;
+                    lit.value()
                 },
                 _ => return Err(syn::Error::new_spanned(meta, "expected string \"<attr> = <string>\"")),
             };
 
             match path {
-                "name" => todo!(),
-                "prefix" => todo!(),
-                "flag" => todo!(),
+                "name" => trigger = trigger.build(Trigger::Name(string), path.span())?,
+                "prefix" => trigger = trigger.build(Trigger::Prefix(string), path.span())?,
                 _ => panic!("internal error, this should not happen")
             }
         }
