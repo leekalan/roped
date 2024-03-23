@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub mod base_types;
 pub mod console;
 pub mod error;
@@ -11,7 +13,10 @@ mod tests {
 
     use base_types::EmptyState;
     use console::run_console;
-    use parsr::{parser::{search::Search, ParsePair, Parser}, parser_matcher::Matcher};
+    use parsr::{
+        parser::{search::Search, ParsePair, Parser},
+        parser_matcher::{Matcher, MatcherSingle},
+    };
     use strand::Strand;
 
     use strand_derive::Strand;
@@ -19,48 +24,46 @@ mod tests {
     use crate as roped;
 
     struct ManualImplStrand;
-    impl<'a> Strand<'a> for ManualImplStrand {
+    impl Strand for ManualImplStrand {
         type State = EmptyState;
         type Input = str;
         type Err = String;
-        
-        fn run(
-            state: &mut Self::State,
+
+        fn run<'a>(
+            _state: &mut Self::State,
             input: &Self::Input,
-            ws: &'a impl Borrow<Matcher<'a, Self::Input, <Self::Input as Search>::Item>>,
-            index: usize,
+            ws: &Matcher<Self::Input, <Self::Input as Search>::Item>,
+            _index: usize,
         ) -> Result<(), error::Error<&'a Self::Input, Self::Err>> {
-            if let Some(pair) = input.parse_once(ws.borrow()) {
-                match pair.get_trail() {
-                    Some(v) => println!("{} + {}", pair.get_arg(), v),
-                    None => println!("{}", pair.get_arg()),
-                }
-    
-                Ok(())
-            } else {
-                todo!()
+            let pair = input.parse_once(ws).unwrap();
+
+            match pair.get_trail() {
+                Some(v) => println!("{} + {}", pair.get_arg(), v),
+                None => println!("{}", pair.get_arg()),
             }
+
+            Ok(())
         }
     }
 
     #[test]
     fn manual_bundle_instance() {
-        run_console::<ManualImplStrand, EmptyState>(
+        run_console::<ManualImplStrand>(
             &mut EmptyState,
             "> ".into(),
             ". ".into(),
             "!".into(),
-            MatchContainer::ItemList(&[' ']),
-            MatchContainer::ItemList(&['\n', ';']),
+            Matcher::Single(MatcherSingle::Item(&' ')),
+            Matcher::List(&[MatcherSingle::Item(&'\n'), MatcherSingle::Item(&';')]),
         );
     }
 
-    #[derive(Strand)]
-    #[strand()]
-    enum ImplStrand {
-        #[strand()]
-        A,
-    }
+    // #[derive(Strand)]
+    // #[strand()]
+    // enum ImplStrand {
+    //     #[strand()]
+    //     A,
+    // }
 
     // #[allow(dead_code)]
     // #[derive(Debug, Bundle)]
