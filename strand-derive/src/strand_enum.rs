@@ -2,11 +2,10 @@ use std::collections::HashMap;
 
 use proc_macro2::TokenStream;
 use quote::ToTokens;
-use syn::{spanned::Spanned, token::Token, Lit, Meta, Type};
+use syn::{spanned::Spanned, Meta, Type};
 
 use crate::{
-    build_error::BuildError,
-    meta_map::{self, collect_meta_map},
+    meta_map::collect_meta_map,
     search_meta::search_meta,
 };
 

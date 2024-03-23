@@ -1,7 +1,5 @@
 use std::io::{self, Write};
 
-use parsr::{matcher::MatchContainer, parse::Parse, trim::Trim};
-
 use crate::strand::Strand;
 
 pub fn run_console<R, S>(
@@ -9,7 +7,7 @@ pub fn run_console<R, S>(
     prompt: Option<&str>,
     counter_suffix: Option<&str>,
     err_prefix: Option<&str>,
-    ws_chars: MatchContainer<&str, char>,
+    ws_chars: Matcher<&str, char>,
     nl_chars: MatchContainer<&str, char>,
 ) where
     R: for<'a> Strand<'a, State = S, Input = &'a str, Err = String>,

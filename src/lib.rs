@@ -5,15 +5,13 @@ pub mod strand;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::borrow::Borrow;
 
-    use parsr::{
-        matcher::{MatchContainer, MatcherStart},
-        parse::{Parse, ParsePair},
-    };
+    use super::*;
 
     use base_types::EmptyState;
     use console::run_console;
+    use parsr::{parser::{search::Search, ParsePair, Parser}, parser_matcher::Matcher};
     use strand::Strand;
 
     use strand_derive::Strand;
@@ -23,22 +21,25 @@ mod tests {
     struct ManualImplStrand;
     impl<'a> Strand<'a> for ManualImplStrand {
         type State = EmptyState;
-        type Input = &'a str;
+        type Input = str;
         type Err = String;
-
+        
         fn run(
-            _state: &mut Self::State,
-            input: Self::Input,
-            ws_chars: MatchContainer<Self::Input, <Self::Input as MatcherStart>::Item>,
-            _: usize,
-        ) -> Result<(), error::Error<Self::Input, Self::Err>> {
-            let ParsePair { parsed, excess } = input.parse_one_arg(ws_chars);
-            match excess {
-                Some(v) => println!("{} + {}", parsed, v),
-                None => println!("{}", parsed),
+            state: &mut Self::State,
+            input: &Self::Input,
+            ws: &'a impl Borrow<Matcher<'a, Self::Input, <Self::Input as Search>::Item>>,
+            index: usize,
+        ) -> Result<(), error::Error<&'a Self::Input, Self::Err>> {
+            if let Some(pair) = input.parse_once(ws.borrow()) {
+                match pair.get_trail() {
+                    Some(v) => println!("{} + {}", pair.get_arg(), v),
+                    None => println!("{}", pair.get_arg()),
+                }
+    
+                Ok(())
+            } else {
+                todo!()
             }
-
-            Ok(())
         }
     }
 
