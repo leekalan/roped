@@ -53,8 +53,8 @@ mod tests {
             "> ".into(),
             ". ".into(),
             "!".into(),
-            Matcher::Single(MatcherSingle::Item(&' ')),
-            Matcher::List(&[MatcherSingle::Item(&'\n'), MatcherSingle::Item(&';')]),
+            Matcher::Single(MatcherSingle::Item(' ')),
+            Matcher::List(&[MatcherSingle::Item('\n'), MatcherSingle::Item(';')]),
         );
     }
 
