@@ -3,7 +3,10 @@ use std::{
     io::{self, Write},
 };
 
-use parsr::{parser::{trim::Trim, Parser}, parser_matcher::Matcher};
+use parsr::{
+    parser::{trim::Trim, Parser},
+    parser_matcher::Matcher,
+};
 
 use crate::strand::Strand;
 
@@ -23,7 +26,7 @@ pub fn run_console<'a, R: Strand<Input = str, Err = String>>(
     let mut read_input = String::new();
 
     io::stdin().read_line(&mut read_input)?;
-    
+
     let err_prefix = err_prefix.unwrap_or("!");
 
     let counter_suffix = counter_suffix.unwrap_or(" ");
@@ -37,7 +40,7 @@ pub fn run_console<'a, R: Strand<Input = str, Err = String>>(
         let command = command.trim_all(ws_chars.borrow());
 
         if command.is_empty() {
-            continue;;
+            continue;
         }
 
         if iter.get_internal().is_some() || index != 1 {
