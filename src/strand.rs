@@ -58,7 +58,7 @@ use crate::error::Error;
 /// # Purpose
 /// 
 /// The value of using a Strand is that it intergrates seamlessly with other
-/// Strand variants construct using the [`#[derive(Strand)]`](derive@Strand) 
+/// Strand variants construct using the [`#[derive(Strand)]`](trait@Strand) 
 /// macro. 
 /// 
 pub trait Strand {
