@@ -5,6 +5,13 @@ pub mod console;
 pub mod error;
 pub mod strand;
 
+use base_types::EmptyState;
+use strand::Strand;
+use strand_derive::Strand;
+use parsr::parser_matcher::Matcher;
+
+use error::Error;
+
 #[cfg(test)]
 mod tests {
     use std::borrow::Borrow;
@@ -31,7 +38,7 @@ mod tests {
 
         fn run<'a>(
             _state: &mut Self::State,
-            input: &Self::Input,
+            input: &'a Self::Input,
             ws: &Matcher<Self::Input, <Self::Input as Search>::Item>,
             _index: usize,
         ) -> Result<(), error::Error<&'a Self::Input, Self::Err>> {
