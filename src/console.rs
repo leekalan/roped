@@ -4,7 +4,7 @@ use std::{
 };
 
 use parsr::{
-    parser::{trim::Trim, Parser},
+    parser::{safe_str::SafeStr, trim::Trim, Parser},
     parser_matcher::Matcher,
 };
 
@@ -19,7 +19,7 @@ use crate::strand::Strand;
 ///
 /// `ws_chars` and `nl_chars` are used to determine the argument separators and newline separators
 /// for parsing the input into individual commands
-pub fn run_console<'a, R: Strand<Input = str, Err = String>>(
+pub fn run_console<'a, R: Strand<Err = String>>(
     state: &mut R::State,
     prompt: Option<&str>,
     counter_suffix: Option<&str>,
@@ -53,10 +53,9 @@ pub fn run_console<'a, R: Strand<Input = str, Err = String>>(
     // Loops over each command in the input
     while let Some(command) = iter.next() {
         // Trims whitespace from the command
-        let command = command.trim_all(ws_chars.borrow());
+        let command = SafeStr::new(command, ws_chars.borrow());
 
-        // Skips over empty commands
-        if command.is_empty() {
+        if command.is_none() {
             continue;
         }
 
@@ -67,7 +66,7 @@ pub fn run_console<'a, R: Strand<Input = str, Err = String>>(
         }
 
         // Runs the command and prints the error if it fails
-        if let Err(err) = R::run(state, command, ws_chars.borrow(), 1) {
+        if let Err(err) = R::run(state, command, 1) {
             println!("{}{}", err_prefix, err);
         }
     }

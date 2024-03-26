@@ -1,3 +1,6 @@
+[workspace]
+members = ["strand-derive"]
+
 [package]
 name = "roped"
 description = "a libary for simple cli"
@@ -8,5 +11,5 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-parsr = "0.2.1"
+parsr = "0.2.5"
 strand-derive = { path = "./strand-derive" }

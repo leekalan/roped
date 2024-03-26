@@ -6,11 +6,15 @@ pub mod error;
 pub mod strand;
 
 use base_types::EmptyState;
+use parsr::parser_matcher::Matcher;
 use strand::Strand;
 use strand_derive::Strand;
-use parsr::parser_matcher::Matcher;
 
 use error::Error;
+
+use parsr;
+
+extern crate self as roped;
 
 #[cfg(test)]
 mod tests {
@@ -21,7 +25,7 @@ mod tests {
     use base_types::EmptyState;
     use console::run_console;
     use parsr::{
-        parser::{search::Search, ParsePair, Parser},
+        parser::{safe_str::SafeStr, search::Search, ParsePair, Parser},
         parser_matcher::{Matcher, MatcherSingle},
     };
     use strand::Strand;
@@ -33,20 +37,23 @@ mod tests {
     struct ManualImplStrand;
     impl Strand for ManualImplStrand {
         type State = EmptyState;
-        type Input = str;
         type Err = String;
 
-        fn run<'a>(
+        fn run(
             _state: &mut Self::State,
-            input: &'a Self::Input,
-            ws: &Matcher<Self::Input, <Self::Input as Search>::Item>,
+            input: Option<SafeStr>,
             _index: usize,
-        ) -> Result<(), error::Error<&'a Self::Input, Self::Err>> {
-            let pair = input.parse_once(ws).unwrap();
+        ) -> Result<(), error::Error<Self::Err>> {
+            let input = match input {
+                Some(v) => v,
+                None => return Err(error::Error::Err("Recieved no input".to_string())),
+            };
 
-            match pair.get_trail() {
-                Some(v) => println!("{} + {}", pair.get_arg(), v),
-                None => println!("{}", pair.get_arg()),
+            let pair = input.safe_parse_once();
+
+            match pair.trail {
+                Some(v) => println!("{} + {}", pair.arg.as_str(), v.as_str()),
+                None => println!("{}", pair.arg.as_str()),
             }
 
             Ok(())
@@ -54,7 +61,7 @@ mod tests {
     }
 
     #[test]
-    fn manual_bundle_instance() {
+    fn manual_strand_instance() {
         run_console::<ManualImplStrand>(
             &mut EmptyState,
             "> ".into(),
@@ -65,122 +72,26 @@ mod tests {
         );
     }
 
-    // #[derive(Strand)]
-    // #[strand()]
-    // enum ImplStrand {
-    //     #[strand()]
-    //     A,
-    // }
+    #[derive(Strand)]
+    #[strand(error = String)]
+    enum ImplStrand {
+        #[strand(prefix = "$")]
+        A(ManualImplStrand),
+        #[strand(name = "command")]
+        B(ManualImplStrand),
+        #[strand(other)]
+        C(ManualImplStrand),
+    }
 
-    // #[allow(dead_code)]
-    // #[derive(Debug, Bundle)]
-    // #[bundle(state = "EmptyState")]
-    // enum BundleInstance {
-    //     #[bundle(prefix = ":")]
-    //     Quit(Quit),
-    //     #[bundle(name = "scope")]
-    //     StrandInstance(StrandInstance),
-    //     #[bundle(other)]
-    //     Other(OtherInstance),
-    // }
-
-    // #[allow(dead_code)]
-    // #[derive(Debug, Strand)]
-    // #[strand(state = "EmptyState", action = "action")]
-    // struct StrandInstance {
-    //     a: i32,
-    //     b: String,
-    //     #[strand(flag = "flag")]
-    //     c: bool,
-    // }
-
-    // impl StrandInstance {
-    //     fn action(&self, _: &mut EmptyState) -> Result<(), String> {
-    //         println!("{:?}", self);
-    //         Ok(())
-    //     }
-    // }
-
-    // #[allow(dead_code)]
-    // #[derive(Debug)]
-    // struct OtherInstance;
-
-    // impl Strand for OtherInstance {
-    //     type State = EmptyState;
-
-    //     fn run(_: &mut Self::State, input: &str, _: &[char]) -> Result<(), String> {
-    //         println!("You sent: {}", input);
-    //         Ok(())
-    //     }
-    // }
-
-    // #[allow(dead_code)]
-    // #[derive(Debug)]
-    // struct Quit;
-
-    // impl Strand for Quit {
-    //     type State = EmptyState;
-
-    //     fn run(_: &mut Self::State, _: &str, _: &[char]) -> Result<(), String> {
-    //         std::process::exit(0);
-    //     }
-    // }
-
-    // #[test]
-    // fn strand_instance() {
-    //     StrandInstance::run(&mut EmptyState, "21 --flag word", &[' ']).unwrap();
-    // }
-
-    // #[test]
-    // fn bundle_instance() {
-    //     BundleInstance::run(&mut EmptyState, "scope 21 word", &[' ']).unwrap();
-    // }
-
-    // #[test]
-    // fn bundle_instance_other() {
-    //     BundleInstance::run(&mut EmptyState, "seperated by spaces", &[' ']).unwrap();
-    // }
-
-    // #[test]
-    // fn parse_multiline() {
-    //     parse_input::<BundleInstance, EmptyState>(
-    //         &mut EmptyState,
-    //         "scope 21 word --flag; seperated by spaces",
-    //         ". ",
-    //         "!",
-    //         &[' '],
-    //         &[';'],
-    //     )
-    // }
-
-    // #[test]
-    // fn parse_empty() {
-    //     parse_input::<BundleInstance, EmptyState>(&mut EmptyState, "", ". ", "!", &[' '], &[';'])
-    // }
-
-    // #[test]
-    // fn parse_semi_colons() {
-    //     parse_input::<BundleInstance, EmptyState>(
-    //         &mut EmptyState,
-    //         ";;  ; ;; ; ",
-    //         ". ",
-    //         "!",
-    //         &[' '],
-    //         &[';'],
-    //     )
-    // }
-
-    // #[test]
-    // fn console() {
-    //     loop {
-    //         run_console::<BundleInstance, EmptyState>(
-    //             &mut EmptyState,
-    //             "> ".into(),
-    //             ". ".into(),
-    //             None,
-    //             &[' '],
-    //             &[';'],
-    //         )
-    //     }
-    // }
+    #[test]
+    fn strand_instance() {
+        run_console::<ImplStrand>(
+            &mut EmptyState,
+            "> ".into(),
+            ". ".into(),
+            "!".into(),
+            Matcher::Single(MatcherSingle::Item(' ')),
+            Matcher::List(&[MatcherSingle::Item('\n'), MatcherSingle::Item(';')]),
+        );
+    }
 }

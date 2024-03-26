@@ -1,13 +1,12 @@
 use std::fmt::Display;
 
-pub enum Error<T, Err> {
-    Internal(InternalError<T>),
+pub enum Error<Err> {
+    Internal(InternalError),
     Err(Err),
 }
-impl<T, Err> Display for Error<T, Err>
+impl<Err> Display for Error<Err>
 where
     Err: Display,
-    T: Display,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -17,14 +16,11 @@ where
     }
 }
 
-pub struct InternalError<T> {
+pub struct InternalError {
     index: usize,
-    variant: ErrorType<T>,
+    variant: ErrorType,
 }
-impl<T> Display for InternalError<T>
-where
-    T: Display,
-{
+impl Display for InternalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.variant {
             ErrorType::Expected(arg_type) => match arg_type {
@@ -44,14 +40,14 @@ where
     }
 }
 
-pub enum ErrorType<T> {
+pub enum ErrorType {
     Expected(ArgType),
-    Parse(ParseErr<T>),
-    Flag(T),
+    Parse(ParseErr),
+    Flag(String),
 }
 
-pub struct ParseErr<T> {
-    arg: T,
+pub struct ParseErr {
+    arg: String,
     parse_type: ArgType,
 }
 

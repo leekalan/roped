@@ -1,0 +1,5 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "./strand-derive/Cargo.toml"
+    ]
+}
