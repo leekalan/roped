@@ -11,7 +11,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-castr = "0.1.0"
 proc-macro2 = "1.0.78"
 syn = {version = "2.0.52"}
 quote = "1.0.35"
