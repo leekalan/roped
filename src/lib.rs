@@ -1,10 +1,10 @@
 #![allow(unused)]
 
 pub mod base_types;
+pub mod command;
 pub mod console;
 pub mod error;
 pub mod strand;
-pub mod command;
 
 use base_types::EmptyState;
 use parsr::parser_matcher::Matcher;
@@ -84,9 +84,9 @@ mod tests {
 
     // impl Command for CommandStrand {
     //     type State = EmptyState;
-    
+
     //     type Err = String;
-    
+
     //     fn action(self, state: &mut Self::State) -> Result<(), Self::Err> {
     //         todo!()
     //     }
