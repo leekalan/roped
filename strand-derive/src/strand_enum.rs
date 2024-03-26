@@ -296,7 +296,19 @@ fn other_matcher(other: Option<Other>) -> proc_macro2::TokenStream {
             }
         }
         None => {
-            panic!("Invalid scope")
+            quote::quote! {
+                "" => Err(::roped::error::Error::Internal(::roped::error::InternalError{
+                    index,
+                    variant: ::roped::error::ErrorType::Expected(::roped::error::ArgType::Scope)
+                })),
+                f => Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                    index,
+                    variant: ::roped::error::ErrorType::Parse(::roped::error::ParseErr {
+                        arg: f.to_string(),
+                        parse_type: ::roped::error::ArgType::Scope,
+                    })
+                })),
+            }
         }
     }
 }
@@ -309,7 +321,12 @@ fn no_input(other: Option<Other>) -> proc_macro2::TokenStream {
             }
         }
         None => {
-            panic!("Missing scope")
+            quote::quote! {
+                Err(::roped::Error::Internal(::roped::error::InternalError{
+                    index,
+                    variant: ::roped::error::ErrorType::Expected(::roped::error::ArgType::Scope)
+                }))
+            }
         }
     }
 }

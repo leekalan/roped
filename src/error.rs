@@ -17,8 +17,8 @@ where
 }
 
 pub struct InternalError {
-    index: usize,
-    variant: ErrorType,
+    pub index: usize,
+    pub variant: ErrorType,
 }
 impl Display for InternalError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -35,7 +35,7 @@ impl Display for InternalError {
                     parse_err.arg, self.index
                 ),
             },
-            ErrorType::Flag(flag) => write!(f, "Invalid flag \"--{}\" ({})", flag, self.index),
+            ErrorType::InvalidFlag(flag) => write!(f, "Invalid flag \"--{}\" ({})", flag, self.index),
         }
     }
 }
@@ -43,12 +43,12 @@ impl Display for InternalError {
 pub enum ErrorType {
     Expected(ArgType),
     Parse(ParseErr),
-    Flag(String),
+    InvalidFlag(String),
 }
 
 pub struct ParseErr {
-    arg: String,
-    parse_type: ArgType,
+    pub arg: String,
+    pub parse_type: ArgType,
 }
 
 pub enum ArgType {
