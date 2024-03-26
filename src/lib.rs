@@ -4,6 +4,7 @@ pub mod base_types;
 pub mod console;
 pub mod error;
 pub mod strand;
+pub mod command;
 
 use base_types::EmptyState;
 use parsr::parser_matcher::Matcher;
@@ -19,7 +20,9 @@ extern crate self as roped;
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Borrow;
+    use std::{borrow::Borrow, process::CommandArgs};
+
+    use self::command::Command;
 
     use super::*;
 
@@ -73,9 +76,25 @@ mod tests {
         );
     }
 
+    // #[derive(Strand)]
+    // struct CommandStrand {
+    //     num: usize,
+    //     string: String,
+    // }
+
+    // impl Command for CommandStrand {
+    //     type State = EmptyState;
+    
+    //     type Err = String;
+    
+    //     fn action(self, state: &mut Self::State) -> Result<(), Self::Err> {
+    //         todo!()
+    //     }
+    // }
+
     #[derive(Strand)]
-    #[strand()]
-    enum ImplStrand {
+    #[strand(state = EmptyState, error = String)]
+    enum ScopeStrand {
         #[strand(prefix = "$")]
         A(ManualImplStrand),
         #[strand(name = "command")]
@@ -86,7 +105,7 @@ mod tests {
 
     #[test]
     fn strand_instance() {
-        run_console::<ImplStrand>(
+        run_console::<ScopeStrand>(
             &mut EmptyState,
             "> ".into(),
             ". ".into(),

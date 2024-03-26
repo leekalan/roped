@@ -34,12 +34,12 @@ pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
 }
 
 #[derive(Clone)]
-struct Config {
-    state: Type,
-    error: Type,
+pub struct Config {
+    pub state: Type,
+    pub error: Type,
 }
 
-fn get_config(input: &syn::DeriveInput) -> syn::Result<Config> {
+pub fn get_config(input: &syn::DeriveInput) -> syn::Result<Config> {
     let strand_meta = search_meta(input.attrs.iter().map(|s| &s.meta), "strand").ok_or(
         syn::Error::new_spanned(input, "expected attribute, \"#[strand(..)]\""),
     )?;
