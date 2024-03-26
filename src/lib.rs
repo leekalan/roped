@@ -12,6 +12,7 @@ use strand_derive::Strand;
 
 use error::Error;
 
+#[allow(clippy::single_component_path_imports)]
 use parsr;
 
 extern crate self as roped;
@@ -73,7 +74,7 @@ mod tests {
     }
 
     #[derive(Strand)]
-    #[strand(error = String)]
+    #[strand()]
     enum ImplStrand {
         #[strand(prefix = "$")]
         A(ManualImplStrand),

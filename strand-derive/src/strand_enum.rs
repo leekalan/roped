@@ -41,7 +41,7 @@ struct Config {
 
 fn get_config(input: &syn::DeriveInput) -> syn::Result<Config> {
     let strand_meta = search_meta(input.attrs.iter().map(|s| &s.meta), "strand").ok_or(
-        syn::Error::new_spanned(&input, "expected attribute, \"#[strand(..)]\""),
+        syn::Error::new_spanned(input, "expected attribute, \"#[strand(..)]\""),
     )?;
 
     let meta_list = match strand_meta {
@@ -81,7 +81,7 @@ fn get_config(input: &syn::DeriveInput) -> syn::Result<Config> {
                 ))
             }
         },
-        None => syn::parse_quote! { () },
+        None => syn::parse_quote! { String },
     };
 
     Ok(Config { state, error })
@@ -110,14 +110,14 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(Vec<Prefix>, Vec<Name>
             syn::Fields::Unnamed(v) if v.unnamed.len() == 1 => &v.unnamed[0].ty,
             _ => {
                 return Err(syn::Error::new_spanned(
-                    &variant,
+                    variant,
                     "expected tuple, \"<name>(<type>)\"",
                 ))
             }
         };
 
         let strand_meta = search_meta(variant.attrs.iter().map(|s| &s.meta), "strand").ok_or(
-            syn::Error::new_spanned(&variant, "expected attribute, \"#[strand(..)]\""),
+            syn::Error::new_spanned(variant, "expected attribute, \"#[strand(..)]\""),
         )?;
 
         let meta_list = match strand_meta {
@@ -134,6 +134,8 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(Vec<Prefix>, Vec<Name>
 
         let meta_map = collect_meta_map(meta_list, &["name", "prefix", "other"])?;
 
+        let mut no_reference = false;
+
         if let Some(meta) = meta_map.get("name") {
             let string: String = match meta {
                 Meta::NameValue(nv) => {
@@ -149,7 +151,21 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(Vec<Prefix>, Vec<Name>
                 }
             };
 
+            if prefixes.iter().any(|Prefix(s, _)| s == &string) {
+                return Err(syn::Error::new_spanned(meta, "prefix/name already exists"));
+            }
+
+            if names.iter().any(|Name(s, _)| s == &string) {
+                return Err(syn::Error::new_spanned(meta, "prefix/name already exists"));
+            }
+
+            if string.is_empty() {
+                return Err(syn::Error::new_spanned(meta, "expected non-empty string"));
+            }
+
             names.push(Name(string, variant_type));
+
+            no_reference = true;
         }
 
         if let Some(meta) = meta_map.get("prefix") {
@@ -167,7 +183,21 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(Vec<Prefix>, Vec<Name>
                 }
             };
 
+            if prefixes.iter().any(|Prefix(s, _)| s == &string) {
+                return Err(syn::Error::new_spanned(meta, "prefix/name already exists"));
+            }
+
+            if names.iter().any(|Name(s, _)| s == &string) {
+                return Err(syn::Error::new_spanned(meta, "prefix/name already exists"));
+            }
+
+            if string.is_empty() {
+                return Err(syn::Error::new_spanned(meta, "expected non-empty string"));
+            }
+
             prefixes.push(Prefix(string, variant_type));
+
+            no_reference = true;
         }
 
         if let Some(meta) = meta_map.get("other") {
@@ -181,6 +211,15 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(Vec<Prefix>, Vec<Name>
                 }
                 _ => return Err(syn::Error::new_spanned(meta, "expected string \"<attr>\"")),
             };
+
+            no_reference = true;
+        }
+
+        if !no_reference {
+            return Err(syn::Error::new_spanned(
+                variant,
+                "expected a trigger to run the Strand, example: \"#[strand(name = \"command\")\"]",
+            ));
         }
     }
 
