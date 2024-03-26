@@ -28,14 +28,20 @@ impl Display for InternalError {
                 ArgType::Arg => write!(f, "Expected an argument ({})", self.index),
             },
             ErrorType::Parse(parse_err) => match parse_err.parse_type {
-                ArgType::Scope => write!(f, "Scope \"{}\" does not exist ({})", parse_err.arg, self.index),
+                ArgType::Scope => write!(
+                    f,
+                    "Scope \"{}\" does not exist ({})",
+                    parse_err.arg, self.index
+                ),
                 ArgType::Arg => write!(
                     f,
                     "Unable to cast argument \"{}\" ({})",
                     parse_err.arg, self.index
                 ),
             },
-            ErrorType::InvalidFlag(flag) => write!(f, "Flag \"--{}\" does not exist ({})", flag, self.index),
+            ErrorType::InvalidFlag(flag) => {
+                write!(f, "Flag \"--{}\" does not exist ({})", flag, self.index)
+            }
         }
     }
 }
