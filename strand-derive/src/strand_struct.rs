@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::Type;
@@ -7,7 +9,7 @@ use crate::{meta_map::collect_meta_map, search_meta::search_meta};
 pub fn strand_derive_struct(input: syn::DeriveInput) -> syn::Result<TokenStream> {
     let name = &input.ident;
 
-    let fields = get_fields(&input)?;
+    let (fields, extras) = get_fields(&input)?;
 
     // todo!("construct arguments");
 
@@ -39,9 +41,10 @@ struct Field<'a> {
     ty: &'a Type,
 }
 
+#[derive(Clone)]
 enum Extras<'a> {
     None,
-    Optional(Vec<DefaultField<'a>>),
+    Default(Vec<DefaultField<'a>>),
     Flags(Vec<Flag<'a>>),
 }
 
@@ -51,9 +54,10 @@ struct DefaultField<'a> {
     default: syn::Expr,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct Flag<'a> {
     ident: &'a syn::Ident,
+    name: String,
     flag_type: FlagType<'a>,
 }
 
@@ -125,26 +129,98 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
             let default_object = DefaultField { field: Field { ident, ty }, default };
 
             match &mut extras {
-                Extras::None => extras = Extras::Optional(vec![default_object]),
-                Extras::Optional(list) => list.push(default_object),
+                Extras::None => extras = Extras::Default(vec![default_object]),
+                Extras::Default(list) => list.push(default_object),
                 Extras::Flags(_) => return Err(syn::Error::new_spanned(
                     meta,
                     "both defaults and flags on a strand are not supported",
                 )),
             }
         } else if let Some(meta) = meta_map.get("flag") {
-            let flag_type: Option<Type> = match meta {
-                syn::Meta::NameValue(n) => Some(syn::parse(n.value.to_token_stream().into())?),
-                syn::Meta::Path(_) => None,
+            let flag_name: String = match meta {
+                syn::Meta::NameValue(n) => {
+                    let lit: syn::LitStr = syn::parse(n.value.to_token_stream().into())?;
+                    lit.value()
+                },
                 _ => {
                     return Err(syn::Error::new_spanned(
                         meta,
-                        "expected type, \"state = <type>\"",
+                        "expected type, \"flag = <name>\"",
                     ))
                 }
             };
 
-            todo!();
+            let flag_type = match ty {
+                syn::Type::Path(syn::TypePath { qself: None, path }) => {
+                    let seg = path.segments.first().unwrap();
+                    if seg.ident == "Option" {
+                        match &seg.arguments {
+                            syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments { args, .. }) => {
+                                if args.len() != 1 {
+                                    return Err(syn::Error::new_spanned(
+                                        ty,
+                                        "expected single type argument on Option, \"Option<T>\"",
+                                    ))
+                                }
+                                match args.first().unwrap() {
+                                    syn::GenericArgument::Type(ty) => ty,
+                                    _ => {
+                                        return Err(syn::Error::new_spanned(
+                                            ty,
+                                            "expected single type argument on Option, \"Option<T>\"",
+                                        ))
+                                    }
+                                }
+                            }
+                            _ => {
+                                return Err(syn::Error::new_spanned(
+                                    ty,
+                                    "expected single type argument on Option, \"Option<T>\"",
+                                ))
+                            }
+                        }
+                    } else {
+                        return Err(syn::Error::new_spanned(
+                            ty,
+                            "expected single type argument on Option, \"Option<T>\"",
+                        ))
+                    }
+                }
+                _ => {
+                    return Err(syn::Error::new_spanned(
+                        ty,
+                        "expected single type argument on Option, \"Option<T>\"",
+                    ))
+                }
+            };
+
+            let empty: Type = syn::parse(quote::quote! { () }.into_token_stream().into())?;
+
+            let is_unit = match flag_type {
+                Type::Path(syn::TypePath { qself: None, path }) => {
+                    path.segments.last().map_or(false, |path_segment| {
+                        path_segment.ident == "Trigger" && path_segment.arguments.is_empty()
+                    })
+                },
+                _ => false,
+            };
+
+            let flag_type = if !is_unit {
+                FlagType::Value(flag_type)
+            } else {
+                FlagType::Trigger
+            };
+
+            let flag_object = Flag { ident, name: flag_name, flag_type };
+
+            match &mut extras {
+                Extras::None => extras = Extras::Flags(vec![flag_object]),
+                Extras::Flags(list) => list.push(flag_object),
+                Extras::Default(_) => return Err(syn::Error::new_spanned(
+                    meta,
+                    "both defaults and flags on a strand are not supported",
+                )),
+            }
         } else {
             return Err(syn::Error::new_spanned(
                 strand_meta,
@@ -152,6 +228,6 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
             ))
         }
     }
-
-    todo!()
+    
+    Ok((fields, extras))
 }

@@ -22,7 +22,7 @@ extern crate self as roped;
 mod tests {
     use std::{borrow::Borrow, process::CommandArgs};
 
-    use self::command::Command;
+    use self::{base_types::Trigger, command::Command};
 
     use super::*;
 
@@ -76,21 +76,23 @@ mod tests {
         );
     }
 
-    // #[derive(Strand)]
-    // struct CommandStrand {
-    //     num: usize,
-    //     string: String,
-    // }
+    #[derive(Strand)]
+    struct CommandStrand {
+        #[strand()]
+        num: usize,
+        #[strand(flag = "flag")]
+        string: Option<Trigger>,
+    }
 
-    // impl Command for CommandStrand {
-    //     type State = EmptyState;
+    impl Command for CommandStrand {
+        type State = EmptyState;
 
-    //     type Err = String;
+        type Err = String;
 
-    //     fn action(self, state: &mut Self::State) -> Result<(), Self::Err> {
-    //         todo!()
-    //     }
-    // }
+        fn action(self, state: &mut Self::State) -> Result<(), Self::Err> {
+            todo!()
+        }
+    }
 
     #[derive(Strand)]
     #[strand(state = EmptyState, error = String)]
