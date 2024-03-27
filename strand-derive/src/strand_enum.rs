@@ -100,12 +100,12 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(Vec<Prefix>, Vec<Name>
 
     let mut other: Option<Other> = None;
 
-    let e = match &input.data {
+    let data = match &input.data {
         syn::Data::Enum(v) => v,
         _ => panic!("internal error, this should not happen"),
     };
 
-    for variant in &e.variants {
+    for variant in &data.variants {
         let variant_type = match &variant.fields {
             syn::Fields::Unnamed(v) if v.unnamed.len() == 1 => &v.unnamed[0].ty,
             _ => {
@@ -217,7 +217,7 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(Vec<Prefix>, Vec<Name>
 
         if !no_reference {
             return Err(syn::Error::new_spanned(
-                variant,
+                strand_meta,
                 "expected a trigger to run the Strand, example: \"#[strand(name = \"command\")\"]",
             ));
         }
