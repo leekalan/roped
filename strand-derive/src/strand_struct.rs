@@ -1,5 +1,3 @@
-use std::any::Any;
-
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::Type;
@@ -11,7 +9,7 @@ pub fn strand_derive_struct(input: syn::DeriveInput) -> syn::Result<TokenStream>
 
     let (fields, extras) = get_fields(&input)?;
 
-    // todo!("construct arguments");
+    let internal = construct_internal(fields, extras);
 
     let gen = quote::quote! {
         impl ::roped::strand::Strand for #name {
@@ -25,9 +23,9 @@ pub fn strand_derive_struct(input: syn::DeriveInput) -> syn::Result<TokenStream>
             ) -> Result<(), ::roped::error::Error<Self::Err>> {
                 let mut input = raw_input;
 
-                // let this = #this_contructor;
+                #internal
 
-                todo!() // this.run(state, input)
+                this.action(state, input)
             }
         }
     };
@@ -46,6 +44,7 @@ enum Extras<'a> {
     None,
     Default(Vec<DefaultField<'a>>),
     Flags(Vec<Flag<'a>>),
+    Trail,
 }
 
 #[derive(Clone)]
@@ -102,7 +101,7 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
             }
         };
 
-        let meta_map = collect_meta_map(meta_list, &["default", "flag"])?;
+        let meta_map = collect_meta_map(meta_list, &["default", "flag", "trail"])?;
 
         if field_state {
             if meta_map.is_empty() {
@@ -135,6 +134,7 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
                     meta,
                     "both defaults and flags on a strand are not supported",
                 )),
+                Extras::Trail => panic!("both defaults and trails on a strand are not supported"),
             }
         } else if let Some(meta) = meta_map.get("flag") {
             let flag_name: String = match meta {
@@ -194,8 +194,6 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
                 }
             };
 
-            let empty: Type = syn::parse(quote::quote! { () }.into_token_stream().into())?;
-
             let is_unit = match flag_type {
                 Type::Path(syn::TypePath { qself: None, path }) => {
                     path.segments.last().map_or(false, |path_segment| {
@@ -220,7 +218,11 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
                     meta,
                     "both defaults and flags on a strand are not supported",
                 )),
+                Extras::Trail => panic!("both flags and trails on a strand are not supported"),
             }
+        } else if let Some(_meta) = meta_map.get("trail") {
+            //TODO
+            todo!("implement the trail attribute")
         } else {
             return Err(syn::Error::new_spanned(
                 strand_meta,
@@ -230,4 +232,43 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
     }
     
     Ok((fields, extras))
+}
+
+fn construct_internal(fields: Vec<Field>, extras: Extras) -> TokenStream {
+    let field_constructors = construct_fields(&fields);
+    let other = match &extras {
+        Extras::None => quote::quote!(),
+        Extras::Default(t0) => construct_defaults(t0),
+        Extras::Flags(t0) => construct_flags(t0),
+        Extras::Trail => construct_trail(),
+    };
+    let constructor = construct_constructor(&fields, extras);
+
+    quote::quote!{
+        #field_constructors
+        #other
+        let this = Self {
+            #constructor
+        };
+    }
+}
+
+fn construct_fields(fields: &[Field]) -> TokenStream {
+    todo!()
+}
+
+fn construct_defaults(defaults: &[DefaultField]) -> TokenStream {
+    todo!()
+}
+
+fn construct_flags(flags: &[Flag]) -> TokenStream {
+    todo!()
+}
+
+fn construct_trail() -> TokenStream {
+    todo!()
+}
+
+fn construct_constructor(fields: &[Field], extras: Extras) -> TokenStream {
+    todo!()
 }

@@ -11,7 +11,7 @@ pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
 
     let (prefixes, names, other) = get_variants(&input)?;
 
-    let captures = construct_fields(prefixes, names, other);
+    let captures = construct_internal(prefixes, names, other);
 
     let Config { state, error } = config;
 
@@ -226,7 +226,7 @@ fn get_variants(input: &syn::DeriveInput) -> syn::Result<(Vec<Prefix>, Vec<Name>
     Ok((prefixes, names, other))
 }
 
-fn construct_fields(
+fn construct_internal(
     prefixes: Vec<Prefix>,
     names: Vec<Name>,
     other: Option<Other>,
