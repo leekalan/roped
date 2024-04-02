@@ -4,10 +4,10 @@ use syn::Meta;
 
 use crate::build_error::BuildError;
 
-pub fn collect_meta_map<'a, 'b, M>(
+pub fn collect_meta_map<'a, M>(
     meta_list: M,
-    slice: &[&'b str],
-) -> syn::Result<HashMap<&'b str, Meta>>
+    slice: &[&'a str],
+) -> syn::Result<HashMap<&'a str, Meta>>
 where
     M: Clone + quote::ToTokens + IntoIterator<Item = Meta>,
 {

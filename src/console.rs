@@ -4,7 +4,7 @@ use std::{
 };
 
 use parsr::{
-    parser::{safe_str::SafeStr, trim::Trim, Parser},
+    parser::{safe_str::SafeStr, Parser},
     parser_matcher::Matcher,
 };
 
