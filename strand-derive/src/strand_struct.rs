@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::ToTokens;
+use quote::{quote, ToTokens};
 use syn::Type;
 
 use crate::{meta_map::collect_meta_map, search_meta::search_meta};
@@ -25,7 +25,7 @@ pub fn strand_derive_struct(input: syn::DeriveInput) -> syn::Result<TokenStream>
 
                 #internal
 
-                this.action(state, input)
+                this.action(state).map_err(|err| ::roped::error::Error::Err(err))
             }
         }
     };
@@ -44,7 +44,7 @@ enum Extras<'a> {
     None,
     Default(Vec<DefaultField<'a>>),
     Flags(Vec<Flag<'a>>),
-    Trail,
+    Trail(Field<'a>),
 }
 
 #[derive(Clone)]
@@ -84,7 +84,7 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
         };
 
         let ty = &field.ty;
-        
+
         let strand_meta = search_meta(field.attrs.iter().map(|s| &s.meta), "strand").ok_or(
             syn::Error::new_spanned(field, "expected attribute, \"#[strand(..)]\""),
         )?;
@@ -106,7 +106,7 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
         if field_state {
             if meta_map.is_empty() {
                 fields.push(Field { ident, ty });
-                continue
+                continue;
             } else {
                 field_state = false
             }
@@ -114,9 +114,7 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
 
         if let Some(meta) = meta_map.get("default") {
             let default: syn::Expr = match meta {
-                syn::Meta::NameValue(nv) => {
-                    nv.value.clone()
-                }
+                syn::Meta::NameValue(nv) => nv.value.clone(),
                 _ => {
                     return Err(syn::Error::new_spanned(
                         meta,
@@ -125,27 +123,34 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
                 }
             };
 
-            let default_object = DefaultField { field: Field { ident, ty }, default };
+            let default_object = DefaultField {
+                field: Field { ident, ty },
+                default,
+            };
 
             match &mut extras {
                 Extras::None => extras = Extras::Default(vec![default_object]),
                 Extras::Default(list) => list.push(default_object),
-                Extras::Flags(_) => return Err(syn::Error::new_spanned(
-                    meta,
-                    "both defaults and flags on a strand are not supported",
-                )),
-                Extras::Trail => panic!("both defaults and trails on a strand are not supported"),
+                Extras::Flags(_) => {
+                    return Err(syn::Error::new_spanned(
+                        meta,
+                        "both defaults and flags on a strand are not supported",
+                    ))
+                }
+                Extras::Trail(_) => {
+                    panic!("both defaults and trails on a strand are not supported")
+                }
             }
         } else if let Some(meta) = meta_map.get("flag") {
             let flag_name: String = match meta {
                 syn::Meta::NameValue(n) => {
                     let lit: syn::LitStr = syn::parse(n.value.to_token_stream().into())?;
                     lit.value()
-                },
+                }
                 _ => {
                     return Err(syn::Error::new_spanned(
                         meta,
-                        "expected type, \"flag = <name>\"",
+                        "expected name, \"flag = <name>\"",
                     ))
                 }
             };
@@ -155,21 +160,21 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
                     let seg = path.segments.first().unwrap();
                     if seg.ident == "Option" {
                         match &seg.arguments {
-                            syn::PathArguments::AngleBracketed(syn::AngleBracketedGenericArguments { args, .. }) => {
+                            syn::PathArguments::AngleBracketed(
+                                syn::AngleBracketedGenericArguments { args, .. },
+                            ) => {
                                 if args.len() != 1 {
                                     return Err(syn::Error::new_spanned(
                                         ty,
                                         "expected single type argument on Option, \"Option<T>\"",
-                                    ))
+                                    ));
                                 }
                                 match args.first().unwrap() {
                                     syn::GenericArgument::Type(ty) => ty,
-                                    _ => {
-                                        return Err(syn::Error::new_spanned(
-                                            ty,
-                                            "expected single type argument on Option, \"Option<T>\"",
-                                        ))
-                                    }
+                                    _ => return Err(syn::Error::new_spanned(
+                                        ty,
+                                        "expected single type argument on Option, \"Option<T>\"",
+                                    )),
                                 }
                             }
                             _ => {
@@ -183,7 +188,7 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
                         return Err(syn::Error::new_spanned(
                             ty,
                             "expected single type argument on Option, \"Option<T>\"",
-                        ))
+                        ));
                     }
                 }
                 _ => {
@@ -199,7 +204,7 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
                     path.segments.last().map_or(false, |path_segment| {
                         path_segment.ident == "Trigger" && path_segment.arguments.is_empty()
                     })
-                },
+                }
                 _ => false,
             };
 
@@ -209,28 +214,53 @@ fn get_fields(input: &syn::DeriveInput) -> syn::Result<(Vec<Field>, Extras)> {
                 FlagType::Trigger
             };
 
-            let flag_object = Flag { ident, name: flag_name, flag_type };
+            let flag_object = Flag {
+                ident,
+                name: flag_name,
+                flag_type,
+            };
 
             match &mut extras {
                 Extras::None => extras = Extras::Flags(vec![flag_object]),
                 Extras::Flags(list) => list.push(flag_object),
-                Extras::Default(_) => return Err(syn::Error::new_spanned(
-                    meta,
-                    "both defaults and flags on a strand are not supported",
-                )),
-                Extras::Trail => panic!("both flags and trails on a strand are not supported"),
+                Extras::Default(_) => {
+                    return Err(syn::Error::new_spanned(
+                        meta,
+                        "both defaults and flags on a strand are not supported",
+                    ))
+                }
+                Extras::Trail(_) => panic!("both flags and trails on a strand are not supported"),
             }
-        } else if let Some(_meta) = meta_map.get("trail") {
-            //TODO
-            todo!("implement the trail attribute")
+        } else if let Some(meta) = meta_map.get("trail") {
+            match meta {
+                syn::Meta::Path(_) => (),
+                _ => return Err(syn::Error::new_spanned(meta, "expected, \"trail\"")),
+            };
+
+            match &mut extras {
+                Extras::None => extras = Extras::Trail(Field { ident, ty }),
+                Extras::Flags(_) => {
+                    return Err(syn::Error::new_spanned(
+                        meta,
+                        "both flags and trails on a strand are not supported",
+                    ))
+                }
+                Extras::Default(_) => {
+                    return Err(syn::Error::new_spanned(
+                        meta,
+                        "both defaults and trails on a strand are not supported",
+                    ))
+                }
+                Extras::Trail(_) => panic!("a trail can only appear once on a strand"),
+            }
         } else {
             return Err(syn::Error::new_spanned(
                 strand_meta,
                 "expected attribute, \"#[strand(optional / flag / flag = <type>)]\"",
-            ))
+            ));
         }
     }
-    
+
     Ok((fields, extras))
 }
 
@@ -240,11 +270,11 @@ fn construct_internal(fields: Vec<Field>, extras: Extras) -> TokenStream {
         Extras::None => quote::quote!(),
         Extras::Default(t0) => construct_defaults(t0),
         Extras::Flags(t0) => construct_flags(t0),
-        Extras::Trail => construct_trail(),
+        Extras::Trail(t0) => construct_trail(t0),
     };
     let constructor = construct_constructor(&fields, extras);
 
-    quote::quote!{
+    quote::quote! {
         #field_constructors
         #other
         let this = Self {
@@ -254,21 +284,93 @@ fn construct_internal(fields: Vec<Field>, extras: Extras) -> TokenStream {
 }
 
 fn construct_fields(fields: &[Field]) -> TokenStream {
-    todo!()
+    let mut field_constructors: Vec<TokenStream> = Vec::with_capacity(fields.len());
+
+    for field in fields {
+        let ident = field.ident;
+        let ty = field.ty;
+
+        let quote = quote::quote! {
+            let s = match input {
+                Some(v) => v,
+                None => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                    index,
+                    variant: ::roped::error::ErrorType::Expected(::roped::error::ArgType::Arg)
+                }))
+            };
+
+            let pair = s.safe_parse_once();
+
+            let #ident: #ty = match std::str::FromStr::from_str(pair.arg.as_str()) {
+                Ok(v) => v,
+                Err(_) => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                    index,
+                    variant: ::roped::error::ErrorType::Parse(::roped::error::ParseErr {
+                        arg: s.as_str().to_string(),
+                        parse_type: ::roped::error::ArgType::Arg,
+                    })
+                })),
+            };
+
+            let input = pair.trail;
+        };
+
+        field_constructors.push(quote);
+    }
+
+    quote!(#(#field_constructors)*)
 }
 
 fn construct_defaults(defaults: &[DefaultField]) -> TokenStream {
-    todo!()
+    quote!()
 }
 
 fn construct_flags(flags: &[Flag]) -> TokenStream {
-    todo!()
+    quote!()
 }
 
-fn construct_trail() -> TokenStream {
-    todo!()
+fn construct_trail(field: &Field) -> TokenStream {
+    quote!()
 }
 
 fn construct_constructor(fields: &[Field], extras: Extras) -> TokenStream {
-    todo!()
+    let mut field_constructors: Vec<TokenStream> = Vec::with_capacity(fields.len());
+
+    for field in fields {
+        let ident = field.ident;
+        let ty = field.ty;
+
+        let quote = quote::quote! {
+            #ident,
+        };
+
+        field_constructors.push(quote);
+    }
+
+    match extras {
+        Extras::None => (),
+        Extras::Default(t0) => for field in t0 {
+            let ident = field.field.ident;
+
+            field_constructors.push(quote! {
+                #ident,
+            })
+        },
+        Extras::Flags(t0) => for flag in t0 {
+            let ident = flag.ident;
+
+            field_constructors.push(quote! {
+                #ident,
+            })
+        },
+        Extras::Trail(t0) => field_constructors.push({
+            let ident = t0.ident;
+
+            quote! {
+                #ident,
+            }
+        }),
+    }
+
+    quote!(#(#field_constructors)*)
 }

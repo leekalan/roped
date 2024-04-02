@@ -81,7 +81,7 @@ mod tests {
         #[strand()]
         num: usize,
         #[strand(flag = "flag")]
-        string: Option<Trigger>,
+        flag: Option<Trigger>,
     }
 
     impl Command for CommandStrand {
