@@ -332,7 +332,26 @@ fn construct_flags(flags: &[Flag]) -> TokenStream {
 }
 
 fn construct_trail(field: &Field) -> TokenStream {
-    quote!()
+    let ident = field.ident;
+    let ty = field.ty;
+
+    quote::quote! {
+        let s = match input {
+            Some(v) => v.as_str().to_string(),
+            None => "".to_string(),
+        };
+        
+        let #ident: #ty = match std::str::FromStr::from_str(&s) {
+            Ok(v) => v,
+            Err(_) => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                index,
+                variant: ::roped::error::ErrorType::Parse(::roped::error::ParseErr {
+                    arg: s,
+                    parse_type: ::roped::error::ArgType::Arg,
+                })
+            })),
+        };
+    }
 }
 
 fn construct_constructor(fields: &[Field], extras: Extras) -> TokenStream {

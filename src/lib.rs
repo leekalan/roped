@@ -80,8 +80,8 @@ mod tests {
     struct CommandStrand {
         #[strand()]
         num: usize,
-        #[strand(flag = "flag")]
-        flag: Option<Trigger>,
+        #[strand(trail)]
+        flag: String,
     }
 
     impl Command for CommandStrand {
