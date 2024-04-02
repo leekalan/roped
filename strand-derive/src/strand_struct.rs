@@ -276,6 +276,8 @@ fn construct_internal(fields: Vec<Field>, extras: Extras) -> TokenStream {
     };
     let constructor = construct_constructor(&fields, extras);
 
+    //TODO - add extra argument unexpected thing
+
     quote::quote! {
         #field_constructors
         #other
@@ -308,7 +310,7 @@ fn construct_fields(fields: &[Field]) -> TokenStream {
                 Err(_) => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
                     index,
                     variant: ::roped::error::ErrorType::Parse(::roped::error::ParseErr {
-                        arg: s.as_str().to_string(),
+                        arg: pair.arg.as_str().to_string(),
                         parse_type: ::roped::error::ArgType::Arg,
                     })
                 })),
@@ -342,7 +344,7 @@ fn construct_defaults(defaults: &[DefaultField]) -> TokenStream {
                         Err(_) => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
                             index,
                             variant: ::roped::error::ErrorType::Parse(::roped::error::ParseErr {
-                                arg: v.as_str().to_string(),
+                                arg: pair.arg.as_str().to_string(),
                                 parse_type: ::roped::error::ArgType::Arg,
                             })
                         })),
@@ -362,9 +364,63 @@ fn construct_defaults(defaults: &[DefaultField]) -> TokenStream {
     quote!(#(#field_constructors)*)
 }
 
-fn construct_flags(_flags: &[Flag]) -> TokenStream {
-    //TODO
-    todo!()
+fn construct_flags(flags: &[Flag]) -> TokenStream {
+    let mut flag_setters: Vec<TokenStream> = Vec::with_capacity(flags.len());
+    let mut flag_matchers: Vec<TokenStream> = Vec::with_capacity(flags.len());
+
+    for flag in flags {
+        let ident = flag.ident;
+        let name = &flag.name;
+
+        let (set_quote, match_quote) = match flag.flag_type {
+            FlagType::Trigger => (quote!(let mut #ident: Option<Trigger> = None;), quote! {
+                #name => #ident = Some(Trigger),
+            }),
+            FlagType::Value(ty) => (quote!(let mut #ident: Option<#ty> = None;), quote! {
+                #name => {
+                    if let Some(s) = input {
+                        let pair = s.safe_parse_once();
+
+                        //TODO - set the flag value
+                        todo!()
+                    } else {
+                        return Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                            index,
+                            variant: ::roped::error::ErrorType::Expected(::roped::error::ArgType::Flag),
+                        }))
+                    }
+                },
+            }),
+        };
+
+        flag_setters.push(set_quote);
+        flag_matchers.push(match_quote);
+    }
+
+    quote! {
+        #(#flag_setters)*
+        
+        while let Some(s) = input {
+            let pair = s.safe_parse_once();
+
+            input = pair.trail;
+
+            if let Some(identifier) = ::roped::parsr::parser::trim::Trim::trim_once(pair.arg.as_str(), ::roped::Matcher::Single(MatcherSingle::Ident("--"))) {
+                match identifier {
+                    #(#flag_matchers)*
+                    _ => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                        index,
+                        variant: ::roped::error::ErrorType::InvalidFlag(pair.arg.as_str().to_string()),
+                    })),
+                }
+            } else {
+                return Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                    index,
+                    variant: ::roped::error::ErrorType::Unexpected(pair.arg.as_str().to_string()),
+                }))
+            }
+        }
+    }
 }
 
 fn construct_trail(field: &Field) -> TokenStream {

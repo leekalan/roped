@@ -1,3 +1,4 @@
+use core::panic;
 use std::fmt::Display;
 
 pub enum Error<Err> {
@@ -26,6 +27,7 @@ impl Display for InternalError {
             ErrorType::Expected(arg_type) => match arg_type {
                 ArgType::Scope => write!(f, "Expected a scope ({})", self.index),
                 ArgType::Arg => write!(f, "Expected an argument ({})", self.index),
+                ArgType::Flag => write!(f, "Expected a flag ({})", self.index),
             },
             ErrorType::Parse(parse_err) => match parse_err.parse_type {
                 ArgType::Scope => write!(
@@ -38,15 +40,20 @@ impl Display for InternalError {
                     "Unable to cast argument \"{}\" ({})",
                     parse_err.arg, self.index
                 ),
+                ArgType::Flag => unreachable!(),
             },
             ErrorType::InvalidFlag(flag) => {
                 write!(f, "Flag \"--{}\" does not exist ({})", flag, self.index)
             }
+            ErrorType::Unexpected(unexpected) => {
+                write!(f, "Did not expect an argument \"{}\" ({})", unexpected, self.index)
+            },
         }
     }
 }
 
 pub enum ErrorType {
+    Unexpected(String),
     Expected(ArgType),
     Parse(ParseErr),
     InvalidFlag(String),
@@ -60,4 +67,5 @@ pub struct ParseErr {
 pub enum ArgType {
     Scope,
     Arg,
+    Flag,
 }

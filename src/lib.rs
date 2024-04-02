@@ -122,7 +122,7 @@ mod tests {
         #[strand(flag = "f1")]
         f1: Option<Trigger>,
         #[strand(flag = "f2")]
-        f2: Option<usize>,
+        f2: Option<String>,
     }
 
     impl Command for FlagStrand {
@@ -131,6 +131,8 @@ mod tests {
         type Err = String;
 
         fn action(self, _state: &mut Self::State) -> Result<(), Self::Err> {
+            let s = "bob";
+
             todo!()
         }
     }
