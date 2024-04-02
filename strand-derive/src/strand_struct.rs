@@ -284,6 +284,8 @@ fn construct_internal(fields: Vec<Field>, extras: Extras) -> TokenStream {
 }
 
 fn construct_fields(fields: &[Field]) -> TokenStream {
+    //TODO add optional strand attribute as it is not always needed
+
     let mut field_constructors: Vec<TokenStream> = Vec::with_capacity(fields.len());
 
     for field in fields {
