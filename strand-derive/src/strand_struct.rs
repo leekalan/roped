@@ -340,7 +340,7 @@ fn construct_trail(field: &Field) -> TokenStream {
             Some(v) => v.as_str().to_string(),
             None => "".to_string(),
         };
-        
+
         let #ident: #ty = match std::str::FromStr::from_str(&s) {
             Ok(v) => v,
             Err(_) => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
@@ -370,20 +370,24 @@ fn construct_constructor(fields: &[Field], extras: Extras) -> TokenStream {
 
     match extras {
         Extras::None => (),
-        Extras::Default(t0) => for field in t0 {
-            let ident = field.field.ident;
+        Extras::Default(t0) => {
+            for field in t0 {
+                let ident = field.field.ident;
 
-            field_constructors.push(quote! {
-                #ident,
-            })
-        },
-        Extras::Flags(t0) => for flag in t0 {
-            let ident = flag.ident;
+                field_constructors.push(quote! {
+                    #ident,
+                })
+            }
+        }
+        Extras::Flags(t0) => {
+            for flag in t0 {
+                let ident = flag.ident;
 
-            field_constructors.push(quote! {
-                #ident,
-            })
-        },
+                field_constructors.push(quote! {
+                    #ident,
+                })
+            }
+        }
         Extras::Trail(t0) => field_constructors.push({
             let ident = t0.ident;
 
