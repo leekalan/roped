@@ -5,23 +5,23 @@ pub mod error;
 pub mod strand;
 
 #[allow(unused)]
-use base_types::EmptyState;
+pub use base_types::EmptyState as EmptyState;
 #[allow(unused)]
-use base_types::Trigger;
+pub use base_types::Trigger as Trigger;
 #[allow(unused)]
-use parsr::parser_matcher::Matcher;
+pub use parsr::parser_matcher::Matcher as Matcher;
 #[allow(unused)]
-use strand::Strand;
+pub use strand::Strand as Strand;
 #[allow(unused)]
-use strand_derive::Strand;
+pub use strand_derive::Strand as Strand;
 
 #[allow(unused)]
-use error::Error;
+pub use error::Error as Error;
 
 #[allow(clippy::single_component_path_imports)]
-use parsr;
+pub use parsr as parsr;
 
-extern crate self as roped;
+pub extern crate self as roped;
 
 #[cfg(test)]
 mod tests {
