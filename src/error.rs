@@ -46,8 +46,12 @@ impl Display for InternalError {
                 write!(f, "Flag \"--{}\" does not exist ({})", flag, self.index)
             }
             ErrorType::Unexpected(unexpected) => {
-                write!(f, "Did not expect an argument \"{}\" ({})", unexpected, self.index)
-            },
+                write!(
+                    f,
+                    "Did not expect an argument \"{}\" ({})",
+                    unexpected, self.index
+                )
+            }
         }
     }
 }

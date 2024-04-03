@@ -40,51 +40,54 @@ pub struct Config {
 }
 
 pub fn get_config(input: &syn::DeriveInput) -> syn::Result<Config> {
-    let strand_meta = search_meta(input.attrs.iter().map(|s| &s.meta), "strand").ok_or(
-        syn::Error::new_spanned(input, "expected attribute, \"#[strand(..)]\""),
-    )?;
-
-    let meta_list = match strand_meta {
-        syn::Meta::List(v) => v.parse_args_with(
-            syn::punctuated::Punctuated::<Meta, syn::Token![,]>::parse_terminated,
-        )?,
-        _ => {
-            return Err(syn::Error::new_spanned(
-                strand_meta,
-                "expected list, \"#[strand(..)]\"",
-            ))
-        }
-    };
-
-    let meta_map = collect_meta_map(meta_list, &["state", "input", "error"])?;
-
-    let state: Type = match meta_map.get("state") {
-        Some(m) => match m {
-            Meta::NameValue(n) => syn::parse(n.value.to_token_stream().into())?,
+    if let Some(strand_meta) = search_meta(input.attrs.iter().map(|s| &s.meta), "strand") {
+        let meta_list = match strand_meta {
+            syn::Meta::List(v) => v.parse_args_with(
+                syn::punctuated::Punctuated::<Meta, syn::Token![,]>::parse_terminated,
+            )?,
             _ => {
                 return Err(syn::Error::new_spanned(
-                    m,
-                    "expected type, \"state = <type>\"",
+                    strand_meta,
+                    "expected list, \"#[strand(..)]\"",
                 ))
             }
-        },
-        None => syn::parse_quote! { roped::base_types::EmptyState },
-    };
-
-    let error: Type = match meta_map.get("error") {
-        Some(m) => match m {
-            Meta::NameValue(n) => syn::parse(n.value.to_token_stream().into())?,
-            _ => {
-                return Err(syn::Error::new_spanned(
-                    m,
-                    "expected type, \"input = <type>\"",
-                ))
-            }
-        },
-        None => syn::parse_quote! { String },
-    };
-
-    Ok(Config { state, error })
+        };
+    
+        let meta_map = collect_meta_map(meta_list, &["state", "input", "error"])?;
+    
+        let state: Type = match meta_map.get("state") {
+            Some(m) => match m {
+                Meta::NameValue(n) => syn::parse(n.value.to_token_stream().into())?,
+                _ => {
+                    return Err(syn::Error::new_spanned(
+                        m,
+                        "expected type, \"state = <type>\"",
+                    ))
+                }
+            },
+            None => syn::parse_quote! { roped::base_types::EmptyState },
+        };
+    
+        let error: Type = match meta_map.get("error") {
+            Some(m) => match m {
+                Meta::NameValue(n) => syn::parse(n.value.to_token_stream().into())?,
+                _ => {
+                    return Err(syn::Error::new_spanned(
+                        m,
+                        "expected type, \"input = <type>\"",
+                    ))
+                }
+            },
+            None => syn::parse_quote! { String },
+        };
+    
+        Ok(Config { state, error })
+    } else {
+        Ok(Config {
+            state: syn::parse_quote! { roped::base_types::EmptyState },
+            error: syn::parse_quote! { String },
+        })
+    }
 }
 
 #[derive(Clone)]
@@ -278,7 +281,7 @@ fn name_matchers(names: Vec<Name>) -> proc_macro2::TokenStream {
         .into_iter()
         .map(|Name(s, t)| {
             quote::quote! {
-                #s => #t::run(state, parse_pair.trail, index),
+                #s => #t::run(state, parse_pair.trail, index + 1),
             }
         })
         .collect();

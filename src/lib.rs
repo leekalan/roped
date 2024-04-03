@@ -131,9 +131,9 @@ mod tests {
         type Err = String;
 
         fn action(self, _state: &mut Self::State) -> Result<(), Self::Err> {
-            let s = "bob";
+            println!("num: {}, f1: {:?}, f2: {:?}", self.num, self.f1, self.f2);
 
-            todo!()
+            Ok(())
         }
     }
 
@@ -160,7 +160,6 @@ mod tests {
 
     #[allow(unused)]
     #[derive(Strand)]
-    #[strand(state = EmptyState, error = String)]
     enum ScopeStrand {
         #[strand(prefix = "$")]
         A(DefaultStrand),

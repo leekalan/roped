@@ -22,6 +22,7 @@ pub fn strand_derive_struct(input: syn::DeriveInput) -> syn::Result<TokenStream>
                 index: usize,
             ) -> Result<(), ::roped::error::Error<Self::Err>> {
                 let mut input = raw_input;
+                let mut index = index;
 
                 #internal
 
@@ -276,14 +277,19 @@ fn construct_internal(fields: Vec<Field>, extras: Extras) -> TokenStream {
     };
     let constructor = construct_constructor(&fields, extras);
 
-    //TODO - add extra argument unexpected thing
-
     quote::quote! {
         #field_constructors
         #other
         let this = Self {
             #constructor
         };
+
+        if let Some(overflow) = input {
+            return Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                index,
+                variant: ::roped::error::ErrorType::Unexpected(overflow.safe_parse_once().arg.as_str().to_string()),
+            }))
+        }
     }
 }
 
@@ -315,6 +321,8 @@ fn construct_fields(fields: &[Field]) -> TokenStream {
                     })
                 })),
             };
+
+            index += 1;
 
             input = pair.trail;
         };
@@ -356,6 +364,8 @@ fn construct_defaults(defaults: &[DefaultField]) -> TokenStream {
                 },
                 None => #expr,
             };
+
+            index += 1;
         };
 
         field_constructors.push(quote);
@@ -373,24 +383,42 @@ fn construct_flags(flags: &[Flag]) -> TokenStream {
         let name = &flag.name;
 
         let (set_quote, match_quote) = match flag.flag_type {
-            FlagType::Trigger => (quote!(let mut #ident: Option<Trigger> = None;), quote! {
-                #name => #ident = Some(Trigger),
-            }),
-            FlagType::Value(ty) => (quote!(let mut #ident: Option<#ty> = None;), quote! {
-                #name => {
-                    if let Some(s) = input {
-                        let pair = s.safe_parse_once();
-
-                        //TODO - set the flag value
-                        todo!()
-                    } else {
-                        return Err(::roped::error::Error::Internal(::roped::error::InternalError {
-                            index,
-                            variant: ::roped::error::ErrorType::Expected(::roped::error::ArgType::Flag),
-                        }))
-                    }
+            FlagType::Trigger => (
+                quote!(let mut #ident: Option<Trigger> = None;),
+                quote! {
+                    #name => #ident = Some(Trigger),
                 },
-            }),
+            ),
+            FlagType::Value(ty) => (
+                quote!(let mut #ident: Option<#ty> = None;),
+                quote! {
+                    #name => {
+                        if let Some(s) = input {
+                            let pair = s.safe_parse_once();
+
+                            let out: #ty = match std::str::FromStr::from_str(pair.arg.as_str()) {
+                                Ok(v) => v,
+                                Err(_) => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                                    index,
+                                    variant: ::roped::error::ErrorType::Parse(::roped::error::ParseErr {
+                                        arg: pair.arg.as_str().to_string(),
+                                        parse_type: ::roped::error::ArgType::Arg,
+                                    })
+                                })),
+                            };
+
+                            input = pair.trail;
+
+                            #ident = Some(out);
+                        } else {
+                            return Err(::roped::error::Error::Internal(::roped::error::InternalError {
+                                index,
+                                variant: ::roped::error::ErrorType::Expected(::roped::error::ArgType::Flag),
+                            }))
+                        }
+                    },
+                },
+            ),
         };
 
         flag_setters.push(set_quote);
@@ -399,7 +427,7 @@ fn construct_flags(flags: &[Flag]) -> TokenStream {
 
     quote! {
         #(#flag_setters)*
-        
+
         while let Some(s) = input {
             let pair = s.safe_parse_once();
 
@@ -419,6 +447,8 @@ fn construct_flags(flags: &[Flag]) -> TokenStream {
                     variant: ::roped::error::ErrorType::Unexpected(pair.arg.as_str().to_string()),
                 }))
             }
+
+            index += 1;
         }
     }
 }
