@@ -1,4 +1,3 @@
-use core::panic;
 use std::fmt::Display;
 
 pub enum Error<Err> {

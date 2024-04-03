@@ -1,7 +1,4 @@
-use parsr::{
-    parser::{safe_str::SafeStr, search::Search, Parser},
-    parser_matcher::Matcher,
-};
+use parsr::parser::safe_str::SafeStr;
 
 use crate::error::Error;
 
