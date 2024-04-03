@@ -52,9 +52,9 @@ pub fn get_config(input: &syn::DeriveInput) -> syn::Result<Config> {
                 ))
             }
         };
-    
+
         let meta_map = collect_meta_map(meta_list, &["state", "input", "error"])?;
-    
+
         let state: Type = match meta_map.get("state") {
             Some(m) => match m {
                 Meta::NameValue(n) => syn::parse(n.value.to_token_stream().into())?,
@@ -67,7 +67,7 @@ pub fn get_config(input: &syn::DeriveInput) -> syn::Result<Config> {
             },
             None => syn::parse_quote! { roped::base_types::EmptyState },
         };
-    
+
         let error: Type = match meta_map.get("error") {
             Some(m) => match m {
                 Meta::NameValue(n) => syn::parse(n.value.to_token_stream().into())?,
@@ -80,7 +80,7 @@ pub fn get_config(input: &syn::DeriveInput) -> syn::Result<Config> {
             },
             None => syn::parse_quote! { String },
         };
-    
+
         Ok(Config { state, error })
     } else {
         Ok(Config {
