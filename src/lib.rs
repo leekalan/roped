@@ -5,21 +5,21 @@ pub mod error;
 pub mod strand;
 
 #[allow(unused)]
-pub use base_types::EmptyState as EmptyState;
+pub use base_types::EmptyState;
 #[allow(unused)]
-pub use base_types::Trigger as Trigger;
+pub use base_types::Trigger;
 #[allow(unused)]
-pub use parsr::parser_matcher::Matcher as Matcher;
+pub use parsr::parser_matcher::Matcher;
 #[allow(unused)]
-pub use strand::Strand as Strand;
+pub use strand::Strand;
 #[allow(unused)]
-pub use strand_derive::Strand as Strand;
+pub use strand_derive::Strand;
 
 #[allow(unused)]
-pub use error::Error as Error;
+pub use error::Error;
 
 #[allow(clippy::single_component_path_imports)]
-pub use parsr as parsr;
+pub use parsr;
 
 pub extern crate self as roped;
 
@@ -32,7 +32,7 @@ mod tests {
     use base_types::EmptyState;
     use console::run_console;
     use parsr::{
-        parser::safe_str::SafeStr,
+        parser::trimmed::Trimmed,
         parser_matcher::{Matcher, MatcherSingle},
     };
     use strand::Strand;
@@ -49,7 +49,7 @@ mod tests {
 
         fn run(
             _state: &mut Self::State,
-            input: Option<SafeStr>,
+            input: Option<Trimmed<str>>,
             _index: usize,
         ) -> Result<(), error::Error<Self::Err>> {
             let input = match input {
@@ -57,11 +57,11 @@ mod tests {
                 None => return Err(error::Error::Err("Recieved no input".to_string())),
             };
 
-            let pair = input.safe_parse_once();
+            let pair = input.parse_once();
 
             match pair.trail {
-                Some(v) => println!("{} + {}", pair.arg.as_str(), v.as_str()),
-                None => println!("{}", pair.arg.as_str()),
+                Some(v) => println!("{} + {}", pair.arg.get_internal(), v.get_internal()),
+                None => println!("{}", pair.arg.get_internal()),
             }
 
             Ok(())
@@ -96,16 +96,16 @@ mod tests {
         fn action(self, _state: &mut Self::State) -> Result<(), Self::Err> {
             let matcher: Matcher<str, char> = Matcher::Single(MatcherSingle::Item(' '));
 
-            let trail = SafeStr::new(&self.trail, &matcher);
+            let trail = Trimmed::<str>::new(&self.trail, &matcher);
 
             print!("number: {}", self.num);
             if let Some(trail) = trail {
-                let pair = trail.safe_parse_once();
-                print!(" + trail args: {}", pair.arg.as_str());
+                let pair = trail.parse_once();
+                print!(" + trail args: {}", pair.arg.get_internal());
 
                 if let Some(trail) = pair.trail {
-                    for arg in trail.safe_parse_all() {
-                        print!(", {}", arg);
+                    for arg in trail.parse_all() {
+                        print!(", {}", arg.get_internal());
                     }
                 }
             }

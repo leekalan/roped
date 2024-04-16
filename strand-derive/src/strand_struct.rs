@@ -18,7 +18,7 @@ pub fn strand_derive_struct(input: syn::DeriveInput) -> syn::Result<TokenStream>
 
             fn run(
                 state: &mut Self::State,
-                raw_input: Option<::roped::parsr::parser::safe_str::SafeStr>,
+                raw_input: Option<::roped::parsr::parser::trimmed::Trimmed<str>>,
                 index: usize,
             ) -> Result<(), ::roped::error::Error<Self::Err>> {
                 let mut input = raw_input;
@@ -287,7 +287,7 @@ fn construct_internal(fields: Vec<Field>, extras: Extras) -> TokenStream {
         if let Some(overflow) = input {
             return Err(::roped::error::Error::Internal(::roped::error::InternalError {
                 index,
-                variant: ::roped::error::ErrorType::Unexpected(overflow.safe_parse_once().arg.as_str().to_string()),
+                variant: ::roped::error::ErrorType::Unexpected(overflow.parse_once().arg.get_internal().to_string()),
             }))
         }
     }
@@ -309,14 +309,14 @@ fn construct_fields(fields: &[Field]) -> TokenStream {
                 }))
             };
 
-            let pair = s.safe_parse_once();
+            let pair = s.parse_once();
 
-            let #ident: #ty = match std::str::FromStr::from_str(pair.arg.as_str()) {
+            let #ident: #ty = match std::str::FromStr::from_str(pair.arg.get_internal()) {
                 Ok(v) => v,
                 Err(_) => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
                     index,
                     variant: ::roped::error::ErrorType::Parse(::roped::error::ParseErr {
-                        arg: pair.arg.as_str().to_string(),
+                        arg: pair.arg.get_internal().to_string(),
                         parse_type: ::roped::error::ArgType::Arg,
                     })
                 })),
@@ -345,14 +345,14 @@ fn construct_defaults(defaults: &[DefaultField]) -> TokenStream {
         let quote = quote::quote! {
             let #ident: #ty = match input {
                 Some(v) => {
-                    let pair = v.safe_parse_once();
+                    let pair = v.parse_once();
 
-                    let out: #ty = match std::str::FromStr::from_str(pair.arg.as_str()) {
+                    let out: #ty = match std::str::FromStr::from_str(pair.arg.get_internal()) {
                         Ok(v) => v,
                         Err(_) => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
                             index,
                             variant: ::roped::error::ErrorType::Parse(::roped::error::ParseErr {
-                                arg: pair.arg.as_str().to_string(),
+                                arg: pair.arg.get_internal().to_string(),
                                 parse_type: ::roped::error::ArgType::Arg,
                             })
                         })),
@@ -394,14 +394,14 @@ fn construct_flags(flags: &[Flag]) -> TokenStream {
                 quote! {
                     #name => {
                         if let Some(s) = input {
-                            let pair = s.safe_parse_once();
+                            let pair = s.parse_once();
 
-                            let out: #ty = match std::str::FromStr::from_str(pair.arg.as_str()) {
+                            let out: #ty = match std::str::FromStr::from_str(pair.arg.get_internal()) {
                                 Ok(v) => v,
                                 Err(_) => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
                                     index,
                                     variant: ::roped::error::ErrorType::Parse(::roped::error::ParseErr {
-                                        arg: pair.arg.as_str().to_string(),
+                                        arg: pair.arg.get_internal().to_string(),
                                         parse_type: ::roped::error::ArgType::Arg,
                                     })
                                 })),
@@ -429,22 +429,22 @@ fn construct_flags(flags: &[Flag]) -> TokenStream {
         #(#flag_setters)*
 
         while let Some(s) = input {
-            let pair = s.safe_parse_once();
+            let pair = s.parse_once();
 
             input = pair.trail;
 
-            if let Some(identifier) = ::roped::parsr::parser::trim::Trim::trim_once(pair.arg.as_str(), ::roped::Matcher::Single(MatcherSingle::Ident("--"))) {
+            if let Some(identifier) = ::roped::parsr::parser::trim::Trim::trim_once(pair.arg.get_internal(), ::roped::Matcher::Single(MatcherSingle::Ident("--"))) {
                 match identifier {
                     #(#flag_matchers)*
                     _ => return Err(::roped::error::Error::Internal(::roped::error::InternalError {
                         index,
-                        variant: ::roped::error::ErrorType::InvalidFlag(pair.arg.as_str().to_string()),
+                        variant: ::roped::error::ErrorType::InvalidFlag(pair.arg.get_internal().to_string()),
                     })),
                 }
             } else {
                 return Err(::roped::error::Error::Internal(::roped::error::InternalError {
                     index,
-                    variant: ::roped::error::ErrorType::Unexpected(pair.arg.as_str().to_string()),
+                    variant: ::roped::error::ErrorType::Unexpected(pair.arg.get_internal().to_string()),
                 }))
             }
 
@@ -459,7 +459,7 @@ fn construct_trail(field: &Field) -> TokenStream {
 
     quote::quote! {
         let s = match input {
-            Some(v) => v.as_str().to_string(),
+            Some(v) => v.get_internal().to_string(),
             None => "".to_string(),
         };
 

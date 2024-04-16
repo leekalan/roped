@@ -22,7 +22,7 @@ pub fn strand_derive_enum(input: syn::DeriveInput) -> syn::Result<TokenStream> {
 
             fn run(
                 state: &mut Self::State,
-                raw_input: Option<::roped::parsr::parser::safe_str::SafeStr>,
+                raw_input: Option<::roped::parsr::parser::trimmed::Trimmed<str>>,
                 index: usize,
             ) -> Result<(), ::roped::error::Error<Self::Err>> {
                 #captures
@@ -244,9 +244,9 @@ fn construct_internal(
             if false { unsafe { std::hint::unreachable_unchecked() } }
             #prefix_quote
             else {
-                let parse_pair = input.safe_parse_once();
+                let parse_pair = input.parse_once();
 
-                match parse_pair.arg.as_str() {
+                match parse_pair.arg.get_internal() {
                     #name_quote
                     #other_quote
                 }
@@ -263,9 +263,9 @@ fn prefix_matchers(prefixes: Vec<Prefix>) -> proc_macro2::TokenStream {
         .map(|Prefix(s, t)| {
             quote::quote! {
                 else if let Some(trail) = ::roped::parsr::parser::trim::Trim::trim_once(
-                    input.as_str(), ::roped::parsr::parser_matcher::Matcher::ident(&#s)
+                    input.get_internal(), ::roped::parsr::parser_matcher::Matcher::ident(&#s)
                 ) {
-                    #t::run(state, ::roped::parsr::parser::safe_str::SafeStr::new(trail, input.get_matcher()), index)
+                    #t::run(state, ::roped::parsr::parser::trimmed::Trimmed::<str>::new(trail, input.get_matcher()), index)
                 }
             }
         })

@@ -4,7 +4,7 @@ use std::{
 };
 
 use parsr::{
-    parser::{safe_str::SafeStr, Parser},
+    parser::{trimmed::Trimmed, Parser},
     parser_matcher::Matcher,
 };
 
@@ -53,14 +53,14 @@ pub fn run_console<'a, R: Strand<Err = String>>(
     // Loops over each command in the input
     while let Some(command) = iter.next() {
         // Trims whitespace from the command
-        let command = SafeStr::new(command, ws_chars.borrow());
+        let command = Trimmed::<str>::new(command.get_internal(), ws_chars.borrow());
 
         if command.is_none() {
             continue;
         }
 
         // Prints the index if it's not the first command or there are more commands
-        if iter.get_internal().is_some() || index != 1 {
+        if iter.internal.is_some() || index != 1 {
             print!("{}{}", index, counter_suffix);
             index += 1;
         }

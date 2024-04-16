@@ -1,4 +1,4 @@
-use parsr::parser::safe_str::SafeStr;
+use parsr::parser::trimmed::Trimmed;
 
 use crate::error::Error;
 
@@ -18,7 +18,7 @@ use crate::error::Error;
 /// ```rust
 /// fn run(
 ///     state: &mut Self::State,
-///     input: Option<SafeStr>,
+///     input: Option<Trimmed<str>>,
 ///     index: usize,
 /// ) -> Result<(), Error<Self::Err>>;
 /// ```
@@ -38,7 +38,7 @@ use crate::error::Error;
 ///
 ///     fn run(
 ///         _state: &mut Self::State,
-///         input: Option<SafeStr>,
+///         input: Option<Trimmed<str>>,
 ///         _index: usize,
 ///     ) -> Result<(), Error<Self::Err>> {
 ///         for command in input.parse_all(ws) {
@@ -69,13 +69,13 @@ pub trait Strand {
     /// ```
     /// fn run(
     ///     state: &mut Self::State,
-    ///     input: Option<SafeStr>,
+    ///     input: Option<Trimmed<str>>,
     ///     index: usize,
     /// ) -> Result<(), Error<Self::Err>>;
     /// ```
     fn run(
         state: &mut Self::State,
-        input: Option<SafeStr>,
+        input: Option<Trimmed<str>>,
         index: usize,
     ) -> Result<(), Error<Self::Err>>;
 }
