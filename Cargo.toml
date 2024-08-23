@@ -5,7 +5,7 @@ members = ["strand-derive"]
 name = "roped"
 description = "a libary for simple cli"
 license = "MIT OR Apache-2.0"
-version = "0.8.0"
+version = "0.8.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

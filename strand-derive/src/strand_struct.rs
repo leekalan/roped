@@ -458,7 +458,7 @@ fn construct_trail(field: &Field) -> TokenStream {
     let ty = field.ty;
 
     quote::quote! {
-        let s = match input {
+        let s = match input.take() {
             Some(v) => v.get_internal().to_string(),
             None => "".to_string(),
         };
